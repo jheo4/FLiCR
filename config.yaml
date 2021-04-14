@@ -1,0 +1,18 @@
+kitti_bag_file: ""
+kitti_left_mono_info_topic: "/kitti/camera_gray_left/camera_info"   # sensor_msgs/CameraInfo
+kitti_left_mono_image_topic: "/kitti/camera_gray_left/camera_raw"   # sensor_msgs/Image
+kitti_left_col_info_topic: "/kitti/camera_color_left/camera_info"   # sensor_msgs/CameraInfo
+kitti_left_col_image_topic: "/kitti/camera_color_left/image_raw"    # sensor_msgs/Image
+
+kitti_right_mono_info_topic: "/kitti/camera_gray_right/camera_info" # sensor_msgs/CameraInfo
+kitti_right_mono_image_topic: "/kitti/camera_gray_right/camera_raw" # sensor_msgs/Image
+kitti_right_col_info_topic: "/kitti/camera_color_right/camera_info" # sensor_msgs/CameraInfo
+kitti_right_col_image_topic: "/kitti/camera_color_right/image_raw"  # sensor_msgs/Image
+
+kitti_velodyne_topic: "/kitti/velo/pointcloud" # sensor_msgs/PointCloud2
+
+
+l515_bag_file: ""
+l515_col_image_topic: "/L515/color/image_raw"    # sensor_msgs/Image
+l515_dep_point_topic: "/L515/depth/color/points" # sensor_msgs/PointCloud2
+l515_imu_topic: "/L515/imu"                      # sensor_msgs/Imu
