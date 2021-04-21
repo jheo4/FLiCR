@@ -23,6 +23,8 @@ include_directories("include")
 include(cmake/rosbag.cmake)
 include(cmake/realsense.cmake)
 include(cmake/yaml-cpp.cmake)
+include(cmake/opencv.cmake)
+include(cmake/opengl.cmake)
 
 message(STATUS "[PCC COMPILE INFO]")
 
