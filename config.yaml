@@ -16,3 +16,7 @@ l515_bag_file: ""
 l515_col_image_topic: "/L515/color/image_raw"    # sensor_msgs/Image
 l515_dep_point_topic: "/L515/depth/color/points" # sensor_msgs/PointCloud2
 l515_imu_topic: "/L515/imu"                      # sensor_msgs/Imu
+
+d435i_bag_file: ""
+d435i_col_image_topic: "/device_0/sensor_1/Color_0/image/data"   # sensor_msgs/Image
+d435i_depth_image_topic: "/device_0/sensor_0/Depth_0/image/data" # sensor_msgs/Image

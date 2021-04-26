@@ -11,6 +11,9 @@
 #include <librealsense2/rs.hpp>
 #include "example.h"
 
+#define WIDTH 1280
+#define HEIGHT 720
+
 int main() {
   // Getting the configs from yaml
   std::string pccHome = getenv("PCC_HOME");
@@ -26,28 +29,33 @@ int main() {
   std::string d435iBagFile = yamlConfig["d435i_bag_file"].as<std::string>();
   std::string d435iColImage = yamlConfig["d435i_col_image_topic"].as<std::string>();
   std::string d435iDepth = yamlConfig["d435i_depth_image_topic"].as<std::string>();
-
-  //window app(1280, 720, "RealSense Pointcloud Example");
-  auto pipe = std::make_shared<rs2::pipeline>();
-  rs2::config rsConfig;
   std::cout << d435iBagFile << std::endl;
+  std::cout << d435iColImage << std::endl;
+  std::cout << d435iDepth << std::endl;
+
+  // software pipe for reading bag file
+  auto pipe = std::make_shared<rs2::pipeline>();;
+  rs2::config rsConfig;
   rsConfig.enable_device_from_file(d435iBagFile);
   pipe->start(rsConfig);
 
-  for(int i = 0; i < 300; i++) {
+  // pointcloud gl app
+  window app(WIDTH, HEIGHT, "D435i Example");
+  glfw_state appState;
+  register_glfw_callbacks(app, appState);
+  rs2::pointcloud pointCloud;
+  rs2::points points;
+
+  while(app) {
     rs2::frameset frameset = pipe->wait_for_frames();
-    //rs2::depth_frame depthFrame = frameset.get_depth_frame().apply_filter(color_map);
     rs2::video_frame colorFrame = frameset.get_color_frame();
     rs2::depth_frame depthFrame = frameset.get_depth_frame();
 
-    const int w = depthFrame.as<rs2::video_frame>().get_width();
-    const int h = depthFrame.as<rs2::video_frame>().get_height();
+    pointCloud.map_to(colorFrame);
+    points = pointCloud.calculate(depthFrame);
 
-    std::cout << colorFrame.get_width() << "x" << colorFrame.get_height() << std::endl;
-    std::cout << w << "x" << h << std::endl << std::endl;
-    //cv::Mat depthCVImage(cv::Size(w, h), CV_8UC3, (void*)depthFrame.get_data(), cv::Mat::AUTO_STEP);
-    //imshow("test", depthCVImage);
-    //int inKey = cv::waitKey(1) & 0xFF;
+    appState.tex.upload(colorFrame);
+    draw_pointcloud(app.width(), app.height(), appState, points);
   }
 
   return 0;
