@@ -25,6 +25,7 @@ include(cmake/realsense.cmake)
 include(cmake/yaml-cpp.cmake)
 include(cmake/opencv.cmake)
 include(cmake/opengl.cmake)
+include(cmake/ffmpeg.cmake)
 
 message(STATUS "[PCC COMPILE INFO]")
 
