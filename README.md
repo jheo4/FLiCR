@@ -72,3 +72,11 @@ wget https://librealsense.intel.com/rs-tests/TestData/d435i_sample_data.zip
 
 #### KITTI
 https://ericsson.sharepoint.com/sites/Atlantis/Shared%20Documents/XR%20E2E%20Solutions/Point%20Cloud%20Compression/kitti_2011_09_26_drive_0002_synced.bag
+
+## To Build
+```
+mkdir builds && cd builds
+cmake .. && make -j $(nproc)
+./example/EXAMPLE_TO_RUN
+```
+
