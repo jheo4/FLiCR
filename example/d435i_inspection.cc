@@ -7,9 +7,13 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/UInt32.h>
 
 #include <librealsense2/rs.hpp>
-#include <opencv/cv.hpp>
+#include "example.h"
+
+#define WIDTH 1280
+#define HEIGHT 720
 
 int main() {
   // Getting the configs from yaml
@@ -21,30 +25,34 @@ int main() {
   std::string configYaml = pccHome + "/config.yaml";
   std::cout << "3D PCC config.yaml: " << configYaml << std::endl;
 
-  YAML::Node config = YAML::LoadFile(configYaml);
+  YAML::Node yamlConfig = YAML::LoadFile(configYaml);
 
-  std::string l515BagFile = config["l515_bag_file"].as<std::string>();
-  std::string l515ColImage = config["l515_col_image_topic"].as<std::string>();
-  std::string l515Depth = config["l515_dep_point_topic"].as<std::string>();
+  std::string d435iBagFile = yamlConfig["d435i_bag_file"].as<std::string>();
+  std::string d435iColImage = yamlConfig["d435i_col_image_topic"].as<std::string>();
+  std::string d435iDepth = yamlConfig["d435i_depth_image_topic"].as<std::string>();
+  std::string d435iVersion = "/file_version";
+  std::cout << d435iBagFile << std::endl;
+  std::cout << d435iColImage << std::endl;
+  std::cout << d435iDepth << std::endl;
 
-
-  rosbag::Bag l515Bag;
-  std::vector<std::string> l515BagTopics;
+  rosbag::Bag d435iBag;
+  std::vector<std::string> d435iBagTopics;
   rosbag::View *view;
 
-  l515Bag.open(l515BagFile, rosbag::bagmode::Read);
-  if(!l515Bag.isOpen()) {
+  d435iBag.open(d435iBagFile, rosbag::bagmode::Read);
+  if(!d435iBag.isOpen()) {
     std::cout << "Bag file reading error" << std::endl;
     return 0;
   }
 
   // single view with the assumption of synchronized topics
-  l515BagTopics.push_back(l515ColImage);
-  l515BagTopics.push_back(l515Depth);
-  view = new rosbag::View(l515Bag, rosbag::TopicQuery(l515BagTopics));
+  d435iBagTopics.push_back(d435iColImage);
+  d435iBagTopics.push_back(d435iDepth);
+  d435iBagTopics.push_back(d435iVersion);
+  view = new rosbag::View(d435iBag, rosbag::TopicQuery(d435iBagTopics));
 
   for(rosbag::View::iterator curMsg = view->begin(); curMsg != view->end(); curMsg++) {
-    if(curMsg->getTopic() == l515ColImage) {
+    if(curMsg->getTopic() == d435iColImage) {
       sensor_msgs::Image::ConstPtr colorImage = curMsg->instantiate<sensor_msgs::Image>();
       if(colorImage != nullptr) {
         std::cout << colorImage->height << "x" << colorImage->width << std::endl;
@@ -53,7 +61,7 @@ int main() {
         //int inKey = cv::waitKey(1) & 0xFF;
       }
     }
-    else if(curMsg->getTopic() == l515Depth) {
+    else if(curMsg->getTopic() == d435iDepth) {
       sensor_msgs::PointCloud2::ConstPtr depthImage = curMsg->instantiate<sensor_msgs::PointCloud2>();
       if(depthImage != nullptr) {
         std::cout << depthImage->height << "x" << depthImage->width << std::endl;
@@ -61,6 +69,14 @@ int main() {
         // | x | y | z | intensity |
       }
     }
+    else if(curMsg->getTopic() == d435iVersion) {
+      //std_msgs/UInt32
+      std_msgs::UInt32ConstPtr versionNum = curMsg->instantiate<std_msgs::UInt32>();
+      if(versionNum != nullptr) {
+        std::cout << "Version Info: " << versionNum->data << std::endl;
+      }
+    }
+
   }
 
   return 0;

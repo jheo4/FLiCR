@@ -8,6 +8,10 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <types.h>
+
+using namespace std;
+
 int main() {
   std::string pccHome = getenv("PCC_HOME");
   if(pccHome.empty()) {
@@ -41,22 +45,22 @@ int main() {
   view = new rosbag::View(kittiBag, rosbag::TopicQuery(kittiBagTopics));
 
   for(rosbag::View::iterator curMsg = view->begin(); curMsg != view->end(); curMsg++) {
-    if(curMsg->getTopic() == kittiLeftColInfo) {
-      sensor_msgs::CameraInfo::ConstPtr leftColCamInfo = curMsg->instantiate<sensor_msgs::CameraInfo>();
-      if(leftColCamInfo != nullptr) {
-        std::cout << "leftColCamInfo" << std::endl;
-      }
-    }
-    else if(curMsg->getTopic() == kittiLeftColImage) {
+    if(curMsg->getTopic() == kittiLeftColImage) {
       sensor_msgs::Image::ConstPtr leftColImage = curMsg->instantiate<sensor_msgs::Image>();
       if(leftColImage != nullptr) {
         std::cout << "leftColImage" << std::endl;
+        cout << "\t" << leftColImage->width << "x" << leftColImage->height << endl;
       }
     }
     else if(curMsg->getTopic() == kittiVelodyne) {
       sensor_msgs::PointCloud2::ConstPtr velodynePointCloud = curMsg->instantiate<sensor_msgs::PointCloud2>();
       if(velodynePointCloud != nullptr) {
+        HDL64PointCloud *pc = (HDL64PointCloud*)velodynePointCloud->data.data();
         std::cout << "velodynePointCloud" << std::endl;
+        cout << "\t" << velodynePointCloud->width << "x" << velodynePointCloud->height << endl;;
+        for(int i = 0; i < 10; i++) {
+          pc[i*i].print();
+        }
       }
     }
   }

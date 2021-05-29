@@ -6,7 +6,9 @@
 
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/UInt32.h>
 
 #include <librealsense2/rs.hpp>
 #include <opencv/cv.hpp>
@@ -26,6 +28,7 @@ int main() {
   std::string l515BagFile = config["l515_bag_file"].as<std::string>();
   std::string l515ColImage = config["l515_col_image_topic"].as<std::string>();
   std::string l515Depth = config["l515_dep_point_topic"].as<std::string>();
+  std::string l515IMU = config["l515_imu_topic"].as<std::string>();
 
 
   rosbag::Bag l515Bag;
@@ -38,30 +41,43 @@ int main() {
     return 0;
   }
 
+  rosbag::Bag std515;
+  std515.open("/home/jin/github/3D_PCC/resources/l515.bag", rosbag::bagmode::Write);
+  ros::Time::init();
+  ros::Time timer = ros::Time::now();
+  ros::Duration duration(1.0f/30);
+
   // single view with the assumption of synchronized topics
   l515BagTopics.push_back(l515ColImage);
   l515BagTopics.push_back(l515Depth);
+  l515BagTopics.push_back(l515IMU);
   view = new rosbag::View(l515Bag, rosbag::TopicQuery(l515BagTopics));
+
+  std_msgs::UInt32 i;
+  i.data = 3;
+  std515.write("/file_version", ros::Time(timer), i);
 
   for(rosbag::View::iterator curMsg = view->begin(); curMsg != view->end(); curMsg++) {
     if(curMsg->getTopic() == l515ColImage) {
       sensor_msgs::Image::ConstPtr colorImage = curMsg->instantiate<sensor_msgs::Image>();
       if(colorImage != nullptr) {
-        std::cout << colorImage->height << "x" << colorImage->width << std::endl;
-        //cv::Mat colorCVImg(cv::Size(1280, 720), CV_8UC3, (void*)colorImage->data.data(), cv::Mat::AUTO_STEP);
-        //imshow("Color Image", colorCVImg);
-        //int inKey = cv::waitKey(1) & 0xFF;
+        std515.write("/device_0/sensor_1/Color_0/image/data", ros::Time(timer), colorImage);
       }
     }
     else if(curMsg->getTopic() == l515Depth) {
       sensor_msgs::PointCloud2::ConstPtr depthImage = curMsg->instantiate<sensor_msgs::PointCloud2>();
       if(depthImage != nullptr) {
-        std::cout << depthImage->height << "x" << depthImage->width << std::endl;
-        std::cout << depthImage->point_step << ", " << depthImage->row_step << std::endl;
-        // | x | y | z | intensity |
+        std515.write("/device_0/sensor_0/Depth_0/pointcloud/data", ros::Time(timer), depthImage);
+      }
+    }
+    else if(curMsg->getTopic() == l515IMU) {
+      sensor_msgs::ImuConstPtr imuData = curMsg->instantiate<sensor_msgs::Imu>();
+      if(imuData != nullptr) {
+        std515.write("/device_0/sensor_2/Gyro_0/imu/data", ros::Time(timer), imuData);
       }
     }
   }
 
+  std515.close();
   return 0;
 }

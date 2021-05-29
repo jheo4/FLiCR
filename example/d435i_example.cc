@@ -54,6 +54,9 @@ int main() {
     pointCloud.map_to(colorFrame);
     points = pointCloud.calculate(depthFrame);
 
+    uint16_t *pixelBuffer = (uint16_t*)depthFrame.get_data();
+    std::cout << pixelBuffer[0]  << ", " << pixelBuffer[1] << std::endl;
+
     appState.tex.upload(colorFrame);
     draw_pointcloud(app.width(), app.height(), appState, points);
   }
