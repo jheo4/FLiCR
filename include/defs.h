@@ -1,0 +1,12 @@
+#ifndef __PCC_DEFS__
+#define __PCC_DEFS__
+
+#define PI 3.14159266
+
+#define HDL64_VERTICAL_DEGREE_OFFSET (-87.0f)
+#define HDL64_HORIZONTAL_DEGREE_OFFSET 180.0f
+#define HDL64_VERTICAL_DEGREE   27.0f
+#define HDL64_HORIZONTAL_DEGREE 360.0f
+
+#endif
+
