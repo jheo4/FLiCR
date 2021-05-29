@@ -9,6 +9,9 @@ dataset = load_dataset(date, drive)
 tracklet_rects, tracklet_types = load_frame_tracklets(len(list(dataset.velo)),
         'data/{}/{}_drive_{}_sync/tracklet_labels.xml'.format(date, date, drive))
 
-frame = 10
+numFrames = 77
+for i in range(numFrames):
+    frame = i
+    #display_frame_statistics(dataset, tracklet_rects, tracklet_types, frame)
+    display_frame_statistics(dataset, frame)
 
-display_frame_statistics(dataset, tracklet_rects, tracklet_types, frame)
