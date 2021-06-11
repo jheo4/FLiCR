@@ -5,3 +5,5 @@
 #include "./include/utils.h"
 #include "./include/hdl64_pc_reader.h"
 #include "./include/hdl64_ri_converter.h"
+#include "./include/encoder.h"
+#include "./include/decoder.h"

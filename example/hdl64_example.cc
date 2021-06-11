@@ -22,6 +22,10 @@ int main() {
 
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RIConverter;
+  Encoder jpegEncoder;
+  jpegEncoder.init("mjpeg", 2088, 64, 40000, 30);
+  Decoder jpegDecoder;
+  jpegDecoder.init("mjpeg", 2088, 64);
 
   uint32_t seq = 0;
   while(1) {
@@ -35,11 +39,30 @@ int main() {
     cv::Mat *ri = hdl64RIConverter.convertPC2RI(pc);
     debug_print("RI info: %dx%d", ri->cols, ri->rows);
 
-    cv::imwrite("img/ri_" + to_string(seq) + ".png", *ri);
+    //cv::imwrite("img/ri_" + to_string(seq) + ".png", *ri);
+
+    //cv::imshow("test", *ri);
+    //int k = cv::waitKey(1);
 
     cv::Mat normRi;
     cv::normalize(*ri, normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
     cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
+    //cv::imshow("test", *ri);
+    //int k = cv::waitKey(1);
+
+    cv::Mat yuvRi = jpegEncoder.gray2yuv(normRi);
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    jpegEncoder.encodeYUV(yuvRi, pkt);
+    //jpegEncoder.saveAsFile(pkt, "img/ri_" + to_string(seq) + ".jpg");
+
+    cv::Mat yuvDecFrame;
+    jpegDecoder.decodeYUV(pkt.data, pkt.size, yuvDecFrame);
+    av_packet_unref(&pkt);
+    cv::Mat grayDecFrame = jpegDecoder.yuv2gray(yuvDecFrame);
+    cv::imshow("test", grayDecFrame);
+    int k = cv::waitKey(1);
+    jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
 
     seq++;
 
