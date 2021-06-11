@@ -10,7 +10,7 @@ class HDL64RIConverter
   double thetaPrecision, piPrecision;
   int riRow, riCol;
   public:
-    HDL64RIConverter(double thetaPrecision = 0.42, double piPrecision = 0.18);
+    HDL64RIConverter(double thetaPrecision = 0.42, double piPrecision = 0.1724);
 
     cv::Mat* convertPC2RI(std::vector<HDL64PointCloud> *pc);
     cv::Mat* convertPC2RIwithXYZ(std::vector<HDL64PointCloud> *pc);
