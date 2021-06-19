@@ -1,7 +1,7 @@
 #ifndef __PCC_ENCODER__
 #define __PCC_ENCODER_
 
-#include <cv.hpp>
+#include <opencv2/opencv.hpp>
 
 extern "C" {
 #include <libavcodec/avcodec.h>

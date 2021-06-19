@@ -36,3 +36,8 @@ std::vector<HDL64PointCloud>* HDL64PCReader::getNextPC()
   return pc;
 }
 
+void HDL64PCReader::printPCInfo(std::vector<HDL64PointCloud> &pc)
+{
+  debug_print("PC Info: elem(%ld) size(%ld)", pc.size(), pc.size()*sizeof(HDL64PointCloud));
+}
+

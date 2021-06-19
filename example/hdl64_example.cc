@@ -23,21 +23,25 @@ int main() {
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RIConverter;
   Encoder jpegEncoder;
-  jpegEncoder.init("mjpeg", 2088, 64, 40000, 30);
+  jpegEncoder.init("mjpeg", 4500, 64, 40000, 30);
   Decoder jpegDecoder;
-  jpegDecoder.init("mjpeg", 2088, 64);
+  jpegDecoder.init("mjpeg", 4500, 64);
 
   uint32_t seq = 0;
   while(1) {
     // get pc
     std::vector<HDL64PointCloud> *pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
-    debug_print("PC size: %ld", pc->size());
+    hdl64PCReader.printPCInfo(*pc);
 
     // convert pc into ri
     //cv::Mat *ri = hdl64RIConverter.convertPC2RIwithXYZ(pc);
     cv::Mat *ri = hdl64RIConverter.convertPC2RI(pc);
     debug_print("RI info: %dx%d", ri->cols, ri->rows);
+
+    std::vector<HDL64PointCloud> *pc2 = hdl64RIConverter.convertRI2PC(ri);
+    cv::Mat *ri2 = hdl64RIConverter.convertPC2RI(pc2);
+    debug_print("RI2 info: %dx%d", ri2->cols, ri2->rows);
 
     //cv::imwrite("img/ri_" + to_string(seq) + ".png", *ri);
 
@@ -45,11 +49,12 @@ int main() {
     //int k = cv::waitKey(1);
 
     cv::Mat normRi;
-    cv::normalize(*ri, normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+    cv::normalize(*ri2, normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
     cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
     //cv::imshow("test", *ri);
     //int k = cv::waitKey(1);
 
+    ///*
     cv::Mat yuvRi = jpegEncoder.gray2yuv(normRi);
     AVPacket pkt;
     av_init_packet(&pkt);
@@ -63,6 +68,7 @@ int main() {
     cv::imshow("test", grayDecFrame);
     int k = cv::waitKey(1);
     jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
+    //*/
 
     seq++;
 
@@ -70,9 +76,13 @@ int main() {
 
     pc->clear();
     delete pc;
+    pc2->clear();
+    delete pc2;
 
     ri->release();
     delete ri;
+    ri2->release();
+    delete ri2;
   }
 
   return 0;

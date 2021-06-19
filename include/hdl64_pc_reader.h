@@ -11,6 +11,7 @@ class HDL64PCReader: public BagReader
     HDL64PCReader();
     HDL64PCReader(std::string bagFile, std::string topic);
     std::vector<HDL64PointCloud>* getNextPC();
+    void printPCInfo(std::vector<HDL64PointCloud> &pc);
 };
 
 #endif

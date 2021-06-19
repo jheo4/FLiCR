@@ -11,7 +11,7 @@
 #include <std_msgs/UInt32.h>
 
 #include <librealsense2/rs.hpp>
-#include <opencv/cv.hpp>
+#include <opencv2/opencv.hpp>
 
 int main() {
   // Getting the configs from yaml
