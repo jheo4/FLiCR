@@ -1,5 +1,5 @@
 #ifndef __PCC_ENCODER__
-#define __PCC_ENCODER_
+#define __PCC_ENCODER__
 
 #include <opencv2/opencv.hpp>
 

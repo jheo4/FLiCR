@@ -11,6 +11,7 @@ class BagReader
     rosbag::Bag            bag;
     rosbag::View           *view;
     rosbag::View::iterator curMsg;
+    int                    numMsg;
 
   public:
     BagReader();
@@ -18,6 +19,7 @@ class BagReader
     BagReader(std::string bagFile, std::string topic);
     bool openBag(std::string bagFile, std::string topic);
     void clearSession();
+    int getNumMsg() { return numMsg; }
 };
 
 #endif

@@ -3,6 +3,7 @@
 BagReader::BagReader()
 {
   view = nullptr;
+  numMsg = 0;
 }
 
 BagReader::BagReader(std::string bagFile, std::string topic)
@@ -27,6 +28,7 @@ bool BagReader::openBag(std::string bagFile, std::string topic)
 
   view = new rosbag::View(bag, rosbag::TopicQuery(topic));
   curMsg = view->begin();
+  numMsg = view->size();
 
   return true;
 }

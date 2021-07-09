@@ -65,7 +65,7 @@ void Decoder::decodeYUV(uint8_t *inFrameBuffer, int inFrameSize, cv::Mat &outFra
 
   outFrame = cv::Mat::zeros(decFrame->height*1.5, decFrame->width, CV_8UC1);
 
-  double st = getTsNow();
+  //double st = getTsNow();
   int ret = avcodec_send_packet(decCtx, &decPkt);
   while(ret >= 0) {
     ret = avcodec_receive_frame(decCtx, decFrame);
@@ -73,8 +73,8 @@ void Decoder::decodeYUV(uint8_t *inFrameBuffer, int inFrameSize, cv::Mat &outFra
       av_image_copy_to_buffer(outFrame.data, outFrame.total(), decFrame->data, decFrame->linesize,
                               static_cast<AVPixelFormat>(decFrame->format), decFrame->width, decFrame->height, 1);
 
-      double et = getTsNow();
-      debug_print("decoding time: %f ms", et-st);
+      //double et = getTsNow();
+      //debug_print("decoding time: %f ms", et-st);
       return;
     }
   }

@@ -70,13 +70,13 @@ void Encoder::encodeYUV(cv::Mat &inFrame, AVPacket &outPkt)
   av_image_fill_arrays(encFrame->data, encFrame->linesize, inFrame.data, static_cast<AVPixelFormat>(encFrame->format),
                        encFrame->width, encFrame->height, 1);
 
-  double st = getTsNow();
+  //double st = getTsNow();
   int ret = avcodec_send_frame(encCtx, encFrame);
   while(ret >= 0) {
     ret = avcodec_receive_packet(encCtx, &outPkt);
     if(ret == 0) {
-      double et = getTsNow();
-      debug_print("encoding time: %f ms", et-st);
+      //double et = getTsNow();
+      //debug_print("encoding time: %f ms", et-st);
       inFrame.release();
       return;
     }
