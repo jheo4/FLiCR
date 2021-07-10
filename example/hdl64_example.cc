@@ -64,13 +64,13 @@ int main() {
     cv::Mat normRi;
 
     st = getTsNow();
-    double max = hdl64RIConverter.normRi(ri, &normRi);
+    int max = hdl64RIConverter.normRi(ri, &normRi);
     et = getTsNow();
     debug_print("normTime(%f ms)", et-st);
     e2e += (et - st);
     //cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
-    cv::imshow("test", normRi);
-    int k = cv::waitKey(1);
+    //cv::imshow("test", normRi);
+    //int k = cv::waitKey(1);
 
     hdl64RIConverter.getRIQuantError(ri, &normRi, max); // Ri->nRI quan error
 
@@ -101,8 +101,8 @@ int main() {
     debug_print("decTime(%f ms)", et-st);
 
 
-    //cv::imshow("test", grayDecFrame);
-    //int k = cv::waitKey(1);
+    cv::imshow("test", grayDecFrame);
+    int k = cv::waitKey(1);
     //jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
 
     st = getTsNow();

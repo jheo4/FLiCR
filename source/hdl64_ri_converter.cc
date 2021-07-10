@@ -41,16 +41,17 @@ cv::Mat* HDL64RIConverter::convertPC2RIwithXYZ(std::vector<HDL64PointCloud> *pc)
 
 cv::Mat* HDL64RIConverter::convertPC2RI(std::vector<HDL64PointCloud> *pc)
 {
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f, 0.f, 0.f, 0.f));
+  //cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f, 0.f, 0.f, 0.f));
+  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32SC1, cv::Scalar(0));
 
   for(auto p: *pc) {
     float x = p.x;
     float y = p.y;
     float z = p.z;
 
-    //p.print();
-
     float rho    = std::sqrt(x*x + y*y + z*z);
+    int nRho     = (int)(rho * 100);
+
     float rTheta = std::acos(z/rho);
     float rPi    = std::atan2(y, x);
 
@@ -69,7 +70,7 @@ cv::Mat* HDL64RIConverter::convertPC2RI(std::vector<HDL64PointCloud> *pc)
       debug_print("       : %f %f %f", x, y, z);
     }
     */
-    ri->at<float>(rowIdx, colIdx) = rho;
+    ri->at<int>(rowIdx, colIdx) = nRho;
   }
 
   return ri;
@@ -81,8 +82,9 @@ std::vector<HDL64PointCloud>* HDL64RIConverter::convertRI2PC(cv::Mat *ri)
 
   for(int y = 0; y <= ri->rows; y++) {
     for(int x = 0; x <= ri->cols; x++) {
-      float rho = ri->at<float>(y, x);
-      if(rho > 0.1) {
+      //float rho = ri->at<float>(y, x);
+      int rho = ri->at<int>(y, x);
+      if(rho > 0) {
         float nTheta = (y * thetaPrecision);
         float nPi = (x * piPrecision);
 
@@ -93,9 +95,11 @@ std::vector<HDL64PointCloud>* HDL64RIConverter::convertRI2PC(cv::Mat *ri)
         float rPi    = pi    * PI/180.0f;
 
         HDL64PointCloud p;
-        p.x = rho * std::sin(rTheta) * std::cos(rPi);
-        p.y = rho * std::sin(rTheta) * std::sin(rPi);
-        p.z = rho * std::cos(rTheta);
+
+        float fRho = (float)rho/100;
+        p.x = fRho * std::sin(rTheta) * std::cos(rPi);
+        p.y = fRho * std::sin(rTheta) * std::sin(rPi);
+        p.z = fRho * std::cos(rTheta);
         pc->push_back(p);
 
         /*
@@ -147,19 +151,21 @@ double HDL64RIConverter::getRIQuantError(cv::Mat *ri, cv::Mat *nRi, double max)
   return 0;
 }
 
-double HDL64RIConverter::normRi(cv::Mat *oRi, cv::Mat *nRi)
+int HDL64RIConverter::normRi(cv::Mat *oRi, cv::Mat *nRi)
 {
   double min, max;
   cv::Point minP, maxP;
   cv::normalize(*oRi, *nRi, 0, 255, cv::NORM_MINMAX, CV_8UC1); // error here...
   cv::minMaxLoc(*oRi, &min, &max, &minP, &maxP);
 
-  return max;
+  debug_print("min/max: %f %f", min, max);
+
+  return (int)max;
 }
 
-void HDL64RIConverter::denormRi(cv::Mat *nRi, double max, cv::Mat *dnRi)
+void HDL64RIConverter::denormRi(cv::Mat *nRi, int max, cv::Mat *dnRi)
 {
-  cv::normalize(*nRi, *dnRi, 0, max, cv::NORM_MINMAX, CV_32FC1);
+  cv::normalize(*nRi, *dnRi, 0, max, cv::NORM_MINMAX, CV_32SC1);
   //*dnRi *= max;
 }
 

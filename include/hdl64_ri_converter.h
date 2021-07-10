@@ -22,8 +22,8 @@ class HDL64RIConverter
     double getRIQuantError(cv::Mat *ri, cv::Mat *nRi, double max);
     double getE2Error(cv::Mat *ri, cv::Mat *nRi){};
 
-    double normRi(cv::Mat *oRi, cv::Mat *nRi);
-    void denormRi(cv::Mat *nRi, double max, cv::Mat *dnRi);
+    int normRi(cv::Mat *oRi, cv::Mat *nRi);
+    void denormRi(cv::Mat *nRi, int max, cv::Mat *dnRi);
 };
 
 #endif
