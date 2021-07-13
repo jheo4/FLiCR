@@ -16,16 +16,17 @@ void Decoder::init(std::string codec, int width, int height)
   }
 
   decCtx = avcodec_alloc_context3(dec);
-  decCtx->width   = width;
-  decCtx->height  = height;
-  if (strcmp(codec.c_str(), "h264") == 0 ||
-      strcmp(codec.c_str(), "h264_cuvid") == 0)
-  {
-    decCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-  }
-  if (strcmp(codec.c_str(), "mjpeg") == 0) {
-    decCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
-  }
+  decCtx->max_b_frames = 0;
+  //decCtx->width   = width;
+  //decCtx->height  = height;
+  //if (strcmp(codec.c_str(), "h264") == 0 ||
+  //    strcmp(codec.c_str(), "h264_cuvid") == 0)
+  //{
+  //  decCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+  //}
+  //if (strcmp(codec.c_str(), "mjpeg") == 0) {
+  //  decCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+  //}
 
   int ret = avcodec_open2(decCtx, dec, NULL);
   if(ret < 0) {
@@ -36,9 +37,16 @@ void Decoder::init(std::string codec, int width, int height)
   decFrame = av_frame_alloc();
   decFrame->width = width;
   decFrame->height = height;
-  decFrame->format = decCtx->pix_fmt;
+  if (strcmp(codec.c_str(), "h264") == 0 ||
+      strcmp(codec.c_str(), "h264_cuvid") == 0)
+  {
+    decFrame->format = AV_PIX_FMT_YUV420P;
+  }
+  if (strcmp(codec.c_str(), "mjpeg") == 0) {
+    decFrame->format = AV_PIX_FMT_YUVJ420P;
+  }
 
-  decFrameSize = av_image_get_buffer_size(decCtx->pix_fmt, decFrame->width, decFrame->height, 1);
+  decFrameSize = av_image_get_buffer_size((AVPixelFormat)decFrame->format, decFrame->width, decFrame->height, 1);
   decFB = (uint8_t*)av_malloc(decFrameSize);
 
   av_image_fill_arrays(decFrame->data, decFrame->linesize, decFB, static_cast<AVPixelFormat>(decFrame->format),
@@ -50,9 +58,18 @@ cv::Mat Decoder::yuv2gray(cv::Mat &inFrame)
 {
   cv::Mat rgbFrame, grayFrame;
 
-  cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_YV12);
-  cv::cvtColor(rgbFrame, grayFrame, cv::COLOR_RGB2GRAY);
-
+  //cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_NV12);
+  debug_print("flagA");
+  if(!inFrame.empty()){
+    cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_I420);
+    debug_print("non empty -- A");
+  }
+  else debug_print("empty -- A");
+  if(!rgbFrame.empty()) {
+    cv::cvtColor(rgbFrame, grayFrame, cv::COLOR_RGB2GRAY);
+    debug_print("non empty -- B");
+  }
+  else debug_print("empty -- B");
   return grayFrame;
 }
 

@@ -21,15 +21,26 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
   encCtx->bit_rate  = br;
   encCtx->time_base = AVRational{1, fps};
   encCtx->framerate = AVRational{fps, 1};
+  encCtx->delay     = 0;
+  encCtx->max_b_frames = 0;
+  encCtx->gop_size  = 12;
 
   if (strcmp(encCtx->codec->name, "libx264") == 0)
   {
     encCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    av_opt_set(encCtx->priv_data, "preset", "fast", 0);
+    av_opt_set(encCtx->priv_data, "tune", "zerolatency", 0);
+    av_opt_set(encCtx->priv_data, "vsink", "0", 0);
   }
   if (strcmp(encCtx->codec->name, "h264_nvenc") == 0 ||
       strcmp(encCtx->codec->name, "nvenc_h264") == 0 )
   {
     encCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    av_opt_set(encCtx->priv_data, "preset", "ll", 0);
+    av_opt_set(encCtx->priv_data, "zerolatency", "true", 0);
+    av_opt_set(encCtx->priv_data, "delay", 0, 0);
+    av_opt_set(encCtx->priv_data, "2pass", "false", 0);
+    av_opt_set(encCtx->priv_data, "vsink", "0", 0);
   }
   if (strcmp(encCtx->codec->name, "mjpeg") == 0) {
     encCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
@@ -58,7 +69,8 @@ cv::Mat Encoder::gray2yuv(cv::Mat &inFrame)
   //yuvFrame = cv::Mat::zeros(inFrame.rows*1.5, inFrame.cols, CV_8UC1);
 
   cv::cvtColor(inFrame, rgbFrame, cv::COLOR_GRAY2RGB);
-  cv::cvtColor(rgbFrame, yuvFrame, cv::COLOR_RGB2YUV_YV12);
+  //cv::cvtColor(rgbFrame, yuvFrame, cv::COLOR_RGB2YUV_I420);
+  cv::cvtColor(rgbFrame, yuvFrame, cv::COLOR_RGB2YUV_I420);
 
   return yuvFrame;
 }
