@@ -25,10 +25,12 @@ int main() {
   /* Set classes */
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RIConverter;
-  Encoder jpegEncoder;
-  jpegEncoder.init("mjpeg", riCol, riRow, 40000, 30);
-  Decoder jpegDecoder;
-  jpegDecoder.init("mjpeg", riCol, riRow);
+  Encoder encoder;
+  //encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
+  encoder.init("libx264", riCol, riRow, 40000, 30);
+  Decoder decoder;
+  //decoder.init("h264_cuvid", riCol, riRow);
+  decoder.init("h264", riCol, riRow);
 
   double st, et, e2e;
 
@@ -68,7 +70,7 @@ int main() {
     et = getTsNow();
     debug_print("normTime(%f ms)", et-st);
     e2e += (et - st);
-    cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
+    //cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
     //cv::imshow("test", normRi);
     //int k = cv::waitKey(1);
 
@@ -80,8 +82,8 @@ int main() {
 
     /* nRI -> encoded nRI */
     st = getTsNow();
-    cv::Mat yuvRi = jpegEncoder.gray2yuv(normRi);
-    jpegEncoder.encodeYUV(yuvRi, pkt);
+    cv::Mat yuvRi = encoder.gray2yuv(normRi);
+    encoder.encodeYUV(yuvRi, pkt);
     et = getTsNow();
     e2e += (et - st);
     debug_print("encTime(%f ms) // E2E (%f ms)", et-st, e2e);
@@ -93,30 +95,32 @@ int main() {
 
     e2e = 0;
     st = getTsNow();
-    jpegDecoder.decodeYUV(pkt.data, pkt.size, yuvDecFrame);
+    decoder.decodeYUV(pkt.data, pkt.size, yuvDecFrame);
     av_packet_unref(&pkt);
-    cv::Mat grayDecFrame = jpegDecoder.yuv2gray(yuvDecFrame);
+    cv::Mat grayDecFrame = decoder.yuv2gray(yuvDecFrame);
     et = getTsNow();
     e2e += (et - st);
     debug_print("decTime(%f ms)", et-st);
 
 
-    cv::imshow("test", grayDecFrame);
-    int k = cv::waitKey(1);
     //jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
 
-    st = getTsNow();
-    cv::Mat dnRi;
-    hdl64RIConverter.denormRi(&grayDecFrame, max, &dnRi);
-    std::vector<HDL64PointCloud> *decPc = hdl64RIConverter.convertRI2PC(&dnRi);
-    et = getTsNow();
-    e2e += (et - st);
-    debug_print("ri2pc (%f ms) // E2E (%f ms), error (%ld)", et-st, e2e, pc->size() - decPc->size());
+    if(!grayDecFrame.empty()) {
+      cv::imshow("test", grayDecFrame);
+      int k = cv::waitKey(1);
 
-    jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
+      st = getTsNow();
+      cv::Mat dnRi;
+      hdl64RIConverter.denormRi(&grayDecFrame, max, &dnRi);
+      std::vector<HDL64PointCloud> *decPc = hdl64RIConverter.convertRI2PC(&dnRi);
+      et = getTsNow();
+      e2e += (et - st);
+      debug_print("ri2pc (%f ms) // E2E (%f ms), error (%ld)", et-st, e2e, pc->size() - decPc->size());
 
-    decPc->clear();
-    delete decPc;
+      decoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
+      decPc->clear();
+      delete decPc;
+    }
 
     //*/
 
