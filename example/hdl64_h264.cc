@@ -26,11 +26,11 @@ int main() {
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RIConverter;
   Encoder encoder;
-  //encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
-  encoder.init("libx264", riCol, riRow, 40000, 30);
+  encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
+  //encoder.init("libx264", riCol, riRow, 40000, 30);
   Decoder decoder;
-  //decoder.init("h264_cuvid", riCol, riRow);
-  decoder.init("h264", riCol, riRow);
+  decoder.init("h264_cuvid", riCol, riRow);
+  //decoder.init("h264", riCol, riRow);
 
   double st, et, e2e;
 
@@ -41,9 +41,9 @@ int main() {
     e2e = 0;
 
     /* PC Read */
-    std::vector<HDL64PointCloud> *pc = hdl64PCReader.getNextPC();
+    PCLPcPtr pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
-    hdl64PCReader.printPCInfo(*pc);
+    hdl64PCReader.printPCInfo(pc);
 
     //cv::Mat *ri = hdl64RIConverter.convertPC2RIwithXYZ(pc);
 
@@ -112,14 +112,13 @@ int main() {
       st = getTsNow();
       cv::Mat dnRi;
       hdl64RIConverter.denormRi(&grayDecFrame, max, &dnRi);
-      std::vector<HDL64PointCloud> *decPc = hdl64RIConverter.convertRI2PC(&dnRi);
+      PCLPcPtr decPc = hdl64RIConverter.convertRI2PC(&dnRi);
       et = getTsNow();
       e2e += (et - st);
       debug_print("ri2pc (%f ms) // E2E (%f ms), error (%ld)", et-st, e2e, pc->size() - decPc->size());
 
       decoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
       decPc->clear();
-      delete decPc;
     }
 
     //*/
@@ -127,7 +126,6 @@ int main() {
     sleepMS(50);
 
     pc->clear();
-    delete pc;
     //pc2->clear();
     //delete pc2;
 

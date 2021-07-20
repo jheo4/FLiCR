@@ -39,9 +39,9 @@ int main() {
     e2e = 0;
 
     /* PC Read */
-    std::vector<HDL64PointCloud> *pc = hdl64PCReader.getNextPC();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
-    hdl64PCReader.printPCInfo(*pc);
+    hdl64PCReader.printPCInfo(pc);
 
     //cv::Mat *ri = hdl64RIConverter.convertPC2RIwithXYZ(pc);
 
@@ -108,7 +108,7 @@ int main() {
     st = getTsNow();
     cv::Mat dnRi;
     hdl64RIConverter.denormRi(&grayDecFrame, max, &dnRi);
-    std::vector<HDL64PointCloud> *decPc = hdl64RIConverter.convertRI2PC(&dnRi);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr decPc = hdl64RIConverter.convertRI2PC(&dnRi);
     et = getTsNow();
     e2e += (et - st);
     debug_print("ri2pc (%f ms) // E2E (%f ms), error (%ld)", et-st, e2e, pc->size() - decPc->size());
@@ -116,14 +116,12 @@ int main() {
     jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
 
     decPc->clear();
-    delete decPc;
 
     //*/
 
     sleepMS(50);
 
     pc->clear();
-    delete pc;
     //pc2->clear();
     //delete pc2;
 
