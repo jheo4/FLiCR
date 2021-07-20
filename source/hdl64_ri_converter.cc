@@ -42,16 +42,16 @@ cv::Mat* HDL64RIConverter::convertPC2RIwithXYZ(PCLPcPtr pc)
 
 cv::Mat* HDL64RIConverter::convertPC2RI(PCLPcPtr pc)
 {
-  //cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f, 0.f, 0.f, 0.f));
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32SC1, cv::Scalar(0));
+  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  double xSum(0), ySum(0), zSum(0), rhoSum(0);
 
   for(auto p: pc->points) {
     float x = p.x;
     float y = p.y;
     float z = p.z;
+    xSum += x; ySum += y; zSum += z;
 
     float rho    = std::sqrt(x*x + y*y + z*z);
-    int nRho     = (int)(rho * 100);
 
     float rTheta = std::acos(z/rho);
     float rPi    = std::atan2(y, x);
@@ -65,8 +65,11 @@ cv::Mat* HDL64RIConverter::convertPC2RI(PCLPcPtr pc)
     int rowIdx = std::min(ri->rows-1, std::max(0, (int)(nTheta/thetaPrecision)));
     int colIdx = std::min(ri->cols-1, std::max(0, (int)(nPi/piPrecision)));
 
-    ri->at<int>(rowIdx, colIdx) = nRho;
+    ri->at<float>(rowIdx, colIdx) = rho;
+    rhoSum += rho;
   }
+
+  debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
 
   return ri;
 }
@@ -74,13 +77,15 @@ cv::Mat* HDL64RIConverter::convertPC2RI(PCLPcPtr pc)
 
 PCLPcPtr HDL64RIConverter::convertRI2PC(cv::Mat *ri)
 {
+  double xSum(0), ySum(0), zSum(0), rhoSum(0);
+
   PCLPcPtr pc(new pcl::PointCloud<PCLPtXYZ>);
 
   for(int y = 0; y <= ri->rows; y++) {
     for(int x = 0; x <= ri->cols; x++) {
       //float rho = ri->at<float>(y, x);
-      int rho = ri->at<int>(y, x);
-      if(rho > 0) {
+      float rho = ri->at<float>(y, x);
+      if(rho > 2 && rho < 81) { // rho is between 2~81
         float nTheta = (y * thetaPrecision);
         float nPi = (x * piPrecision);
 
@@ -92,21 +97,22 @@ PCLPcPtr HDL64RIConverter::convertRI2PC(cv::Mat *ri)
 
         PCLPtXYZ p;
 
-        float fRho = (float)rho/100;
-        p.x = fRho * std::sin(rTheta) * std::cos(rPi);
-        p.y = fRho * std::sin(rTheta) * std::sin(rPi);
-        p.z = fRho * std::cos(rTheta);
-        pc->push_back(p);
+        p.x = rho * std::sin(rTheta) * std::cos(rPi);
+        p.y = rho * std::sin(rTheta) * std::sin(rPi);
+        p.z = rho * std::cos(rTheta);
 
-        /*
-        if(y == 30 && x == 2000) {
-          debug_print("         %f %f %f", rho, nTheta, nPi);
-          debug_print("       : %f %f %f", p.x, p.y, p.z);
-        }
-        */
+        xSum += p.x; ySum += p.y; zSum += p.z;
+        rhoSum += rho;
+
+        pc->push_back(p);
       }
     }
   }
+
+  debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
+
+  pc->width = pc->size();
+  pc->height = 1;
   return pc;
 }
 
