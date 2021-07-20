@@ -2,10 +2,12 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <utils.h>
 
+
 HDL64PCReader::HDL64PCReader(): BagReader()
 {
   view = nullptr;
 }
+
 
 HDL64PCReader::HDL64PCReader(std::string bagFile, std::string topic): BagReader(bagFile, topic)
 {
@@ -13,19 +15,16 @@ HDL64PCReader::HDL64PCReader(std::string bagFile, std::string topic): BagReader(
   openBag(bagFile, topic);
 }
 
-std::vector<HDL64PointCloud>* HDL64PCReader::getNextPC()
+
+PCLPcPtr HDL64PCReader::getNextPC()
 {
   double st = getTsNow();
   sensor_msgs::PointCloud2::ConstPtr velodynePointCloud = curMsg->instantiate<sensor_msgs::PointCloud2>();
 
-  std::vector<HDL64PointCloud> *pc = new std::vector<HDL64PointCloud>;
-  if(velodynePointCloud != nullptr) {
-    HDL64PointCloud *elem = (HDL64PointCloud*)velodynePointCloud->data.data();
+  PCLPcPtr pc(new pcl::PointCloud<pcl::PointXYZ>);
 
-    for(uint32_t i = 0; i < velodynePointCloud->width; i++) {
-      pc->push_back(*elem);
-      elem++;
-    }
+  if(velodynePointCloud != nullptr) {
+    pcl::fromROSMsg(*velodynePointCloud, *pc);
     curMsg++;
   }
   else return nullptr;
@@ -36,8 +35,9 @@ std::vector<HDL64PointCloud>* HDL64PCReader::getNextPC()
   return pc;
 }
 
-void HDL64PCReader::printPCInfo(std::vector<HDL64PointCloud> &pc)
+
+void HDL64PCReader::printPCInfo(PCLPcPtr pc)
 {
-  debug_print("PC Info: elem(%ld) size(%ld)", pc.size(), pc.size()*sizeof(HDL64PointCloud));
+  debug_print("PC Info: elem(%ld) size(%ld)", pc->size(), pc->size()*sizeof(PCLPtXYZ));
 }
 
