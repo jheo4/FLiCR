@@ -14,13 +14,12 @@ int main() {
 
   YAML::Node config = YAML::LoadFile(configYaml);
 
-  std::string kittiBagFile = config["kitti_bag_file"].as<std::string>();
+  std::string kittiBagFile      = config["kitti_bag_file"].as<std::string>();
   std::string kittiLeftColImage = config["kitti_left_col_image_topic"].as<std::string>();
-  std::string kittiVelodyne = config["kitti_velodyne_topic"].as<std::string>();
+  std::string kittiVelodyne     = config["kitti_velodyne_topic"].as<std::string>();
 
   int riRow = (int)(HDL64_VERTICAL_DEGREE / HDL64_THETA_PRECISION);
   int riCol = (int)(HDL64_HORIZONTAL_DEGREE / HDL64_PI_PRECISION);
-
 
   /* Set classes */
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
@@ -29,10 +28,10 @@ int main() {
   Visualizer visualizer;
   visualizer.initViewerXYZ();
 
-  Encoder jpegEncoder;
-  jpegEncoder.init("mjpeg", riCol, riRow, 40000, 30);
-  Decoder jpegDecoder;
-  jpegDecoder.init("mjpeg", riCol, riRow);
+  Encoder encoder;
+  encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
+  Decoder decoder;
+  decoder.init("h264_cuvid", riCol, riRow);
 
   double st, et, e2e;
 
@@ -65,8 +64,8 @@ int main() {
     av_init_packet(&pkt);
 
     /* nRI -> encoded nRI */
-    cv::Mat yuvRi = jpegEncoder.rgb2yuv(nRi);
-    jpegEncoder.encodeYUV(yuvRi, pkt);
+    cv::Mat yuvRi = encoder.rgb2yuv(nRi);
+    encoder.encodeYUV(yuvRi, pkt);
 
     debug_print("PKT INFO: size(%d), side_data_elems(%d)", pkt.size, pkt.side_data_elems);
 
@@ -78,8 +77,8 @@ int main() {
 
       cv::Mat yuvDecFrame;
 
-      jpegDecoder.decodeYUV(decodingPkt, yuvDecFrame);
-      cv::Mat nRiReconstructed = jpegDecoder.yuv2rgb(yuvDecFrame);
+      decoder.decodeYUV(decodingPkt, yuvDecFrame);
+      cv::Mat nRiReconstructed = decoder.yuv2rgb(yuvDecFrame);
 
       cv::imshow("test", nRi);
       cv::imshow("test2", nRiReconstructed);
@@ -101,11 +100,11 @@ int main() {
       pcReconstructed->clear();
     }
 
+    av_packet_unref(&pkt);
     pc->clear();
     ri->release();
     delete ri;
     nRi.release();
-
   }
 
   return 0;

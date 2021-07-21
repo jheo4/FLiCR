@@ -29,9 +29,9 @@ int main() {
   visualizer.initViewerXYZ();
 
   Encoder encoder;
-  encoder.init("libx264", riCol, riRow, 40000, 30);
+  encoder.init("mjpeg", riCol, riRow, 40000, 30);
   Decoder decoder;
-  decoder.init("h264", riCol, riRow);
+  decoder.init("mjpeg", riCol, riRow);
 
   double st, et, e2e;
 
