@@ -25,12 +25,16 @@ int main() {
   /* Set classes */
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RIConverter;
+
+  Visualizer visualizer;
+  visualizer.initViewerXYZ();
+
   Encoder encoder;
-  encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
-  //encoder.init("libx264", riCol, riRow, 40000, 30);
+  //encoder.init("libx264", riCol, riRow, 120000, 30);
+  encoder.init("h264_nvenc", riCol, riRow, 120000, 30);
   Decoder decoder;
-  decoder.init("h264_cuvid", riCol, riRow);
   //decoder.init("h264", riCol, riRow);
+  decoder.init("h264_cuvid", riCol, riRow);
 
   double st, et, e2e;
 
@@ -38,101 +42,73 @@ int main() {
 
   /* Each Frame Process */
   for(int seq = 0; seq < hdl64PCReader.getNumMsg(); seq++) {
+    debug_print("\n\n %dth msg", seq);
     e2e = 0;
 
     /* PC Read */
-    PCLPcPtr pc = hdl64PCReader.getNextPC();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
     hdl64PCReader.printPCInfo(pc);
-
-    //cv::Mat *ri = hdl64RIConverter.convertPC2RIwithXYZ(pc);
 
     /* PC -> RI */
     st = getTsNow();
     cv::Mat *ri = hdl64RIConverter.convertPC2RI(pc);
     et = getTsNow();
     debug_print("RI info: %dx%d, convTime(%f ms)", ri->cols, ri->rows, et-st);
-    e2e += (et - st);
-    hdl64RIConverter.getRIConvError(pc, ri);
 
-    // std::vector<HDL64PointCloud> *pc2 = hdl64RIConverter.convertRI2PC(ri);
-    // cv::Mat *ri2 = hdl64RIConverter.convertPC2RI(pc2);
-    //cv::imwrite("img/ri_" + to_string(seq) + ".png", *ri);
-    //cv::imshow("test", *ri);
-    //int k = cv::waitKey(1);
-
+    hdl64RIConverter.getRIConvError(pc, ri); // check PC->RI error
 
     /* RI -> nRI */
-    cv::Mat normRi;
+    cv::Mat nRi;
+    double riMax = hdl64RIConverter.normRi(ri, &nRi);
+    hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
 
-    st = getTsNow();
-    int max = hdl64RIConverter.normRi(ri, &normRi);
-    et = getTsNow();
-    debug_print("normTime(%f ms)", et-st);
-    e2e += (et - st);
-    //cv::imwrite("img/normri_" + to_string(seq) + ".png", normRi);
-    //cv::imshow("test", normRi);
-    //int k = cv::waitKey(1);
-
-    hdl64RIConverter.getRIQuantError(ri, &normRi, max); // Ri->nRI quan error
-
-    ///*
     AVPacket pkt;
     av_init_packet(&pkt);
 
     /* nRI -> encoded nRI */
-    st = getTsNow();
-    cv::Mat yuvRi = encoder.gray2yuv(normRi);
+    cv::Mat yuvRi = encoder.rgb2yuv(nRi);
     encoder.encodeYUV(yuvRi, pkt);
-    et = getTsNow();
-    e2e += (et - st);
-    debug_print("encTime(%f ms) // E2E (%f ms)", et-st, e2e);
 
-    //jpegEncoder.saveAsFile(pkt, "img/ri_" + to_string(seq) + ".jpg");
+    debug_print("PKT INFO: size(%d), side_data_elems(%d)", pkt.size, pkt.side_data_elems);
+
 
     /* encoded nRI -> decoded nRI */
-    cv::Mat yuvDecFrame;
+    if(pkt.size > 0) {
+      AVPacket decodingPkt;
+      av_packet_from_data(&decodingPkt, pkt.data, pkt.size);
+      decodingPkt.side_data_elems = 0;
 
-    e2e = 0;
-    st = getTsNow();
-    decoder.decodeYUV(pkt.data, pkt.size, yuvDecFrame);
-    av_packet_unref(&pkt);
-    cv::Mat grayDecFrame = decoder.yuv2gray(yuvDecFrame);
-    et = getTsNow();
-    e2e += (et - st);
-    debug_print("decTime(%f ms)", et-st);
+      cv::Mat yuvDecFrame;
 
+      decoder.decodeYUV(decodingPkt, yuvDecFrame);
+      cv::Mat nRiReconstructed = decoder.yuv2rgb(yuvDecFrame);
 
-    //jpegDecoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
-
-    if(!grayDecFrame.empty()) {
-      cv::imshow("test", grayDecFrame);
+      cv::imshow("test", nRi);
+      cv::imshow("test2", nRiReconstructed);
       int k = cv::waitKey(1);
 
-      st = getTsNow();
-      cv::Mat dnRi;
-      hdl64RIConverter.denormRi(&grayDecFrame, max, &dnRi);
-      PCLPcPtr decPc = hdl64RIConverter.convertRI2PC(&dnRi);
-      et = getTsNow();
-      e2e += (et - st);
-      debug_print("ri2pc (%f ms) // E2E (%f ms), error (%ld)", et-st, e2e, pc->size() - decPc->size());
+      cv::Mat riReconstructed;
+      hdl64RIConverter.denormRi(&nRiReconstructed, riMax, &riReconstructed);
 
-      decoder.saveAsFile(grayDecFrame, "img/ri_" + to_string(seq) + ".png");
-      decPc->clear();
+      PCLPcPtr pcReconstructed = hdl64RIConverter.convertRI2PC(&riReconstructed);
+
+      /* PC Visualization */
+      visualizer.setViewer(pcReconstructed);
+      for(int i = 0; i < 1; i++) {
+        visualizer.show(50);
+      }
+
+      riReconstructed.release();
+      nRiReconstructed.release();
+      pcReconstructed->clear();
     }
 
-    //*/
-
-    sleepMS(50);
-
+    av_packet_unref(&pkt);
     pc->clear();
-    //pc2->clear();
-    //delete pc2;
-
     ri->release();
     delete ri;
-    //ri2->release();
-    //delete ri2;
+    nRi.release();
   }
 
   return 0;

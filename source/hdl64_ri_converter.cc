@@ -130,7 +130,7 @@ int HDL64RIConverter::getRIConvError(PCLPcPtr pc, cv::Mat *ri)
 }
 
 
-double HDL64RIConverter::getRIQuantError(cv::Mat *ri, cv::Mat *nRi, double max)
+double HDL64RIConverter::getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi)
 {
   cv::Mat dnRi, diff;
   denormRi(nRi, max, &dnRi);
@@ -154,22 +154,26 @@ double HDL64RIConverter::getRIQuantError(cv::Mat *ri, cv::Mat *nRi, double max)
 }
 
 
-int HDL64RIConverter::normRi(cv::Mat *oRi, cv::Mat *nRi)
+double HDL64RIConverter::normRi(cv::Mat *oRi, cv::Mat *nRi)
 {
   double min, max;
   cv::Point minP, maxP;
-  cv::normalize(*oRi, *nRi, 0, 255, cv::NORM_MINMAX, CV_8UC1); // error here...
+  cv::Mat temp;
+  cv::normalize(*oRi, temp, 0, 255, cv::NORM_MINMAX, CV_8UC1); // error here...
+  cv::cvtColor(temp, *nRi, cv::COLOR_GRAY2RGB);
   cv::minMaxLoc(*oRi, &min, &max, &minP, &maxP);
 
   debug_print("min/max: %f %f", min, max);
 
-  return (int)max;
+  return max;
 }
 
 
-void HDL64RIConverter::denormRi(cv::Mat *nRi, int max, cv::Mat *dnRi)
+void HDL64RIConverter::denormRi(cv::Mat *nRi, double max, cv::Mat *dnRi)
 {
-  cv::normalize(*nRi, *dnRi, 0, max, cv::NORM_MINMAX, CV_32SC1);
+  cv::Mat temp;
+  cv::cvtColor(*nRi, temp, cv::COLOR_RGB2GRAY);
+  cv::normalize(temp, *dnRi, 0, max, cv::NORM_MINMAX, CV_32FC1);
   //*dnRi *= max;
 }
 

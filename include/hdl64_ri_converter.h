@@ -20,11 +20,11 @@ class HDL64RIConverter
     PCLPcPtr convertRI2PC(cv::Mat *ri);
 
     int getRIConvError(PCLPcPtr pc, cv::Mat *ri);
-    double getRIQuantError(cv::Mat *ri, cv::Mat *nRi, double max);
+    double getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi);
     double getE2Error(cv::Mat *ri, cv::Mat *nRi){};
 
-    int normRi(cv::Mat *oRi, cv::Mat *nRi);
-    void denormRi(cv::Mat *nRi, int max, cv::Mat *dnRi);
+    double normRi(cv::Mat *oRi, cv::Mat *nRi);
+    void denormRi(cv::Mat *nRi, double max, cv::Mat *dnRi);
 };
 
 #endif

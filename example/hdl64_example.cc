@@ -40,6 +40,7 @@ int main() {
 
   /* Each Frame Process */
   for(int seq = 0; seq < hdl64PCReader.getNumMsg(); seq++) {
+    debug_print("\n\n %dth msg", seq);
     e2e = 0;
 
     /* PC Read */
@@ -53,24 +54,58 @@ int main() {
     et = getTsNow();
     debug_print("RI info: %dx%d, convTime(%f ms)", ri->cols, ri->rows, et-st);
 
+    hdl64RIConverter.getRIConvError(pc, ri); // check PC->RI error
+
+    /* RI -> nRI */
     cv::Mat nRi;
-    hdl64RIConverter.normRi(ri, &nRi);
-    cv::imshow("test", nRi);
-    int k = cv::waitKey(1);
+    double riMax = hdl64RIConverter.normRi(ri, &nRi);
+    hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
 
-    //hdl64RIConverter.getRIConvError(pc, ri);
+    AVPacket pkt;
+    av_init_packet(&pkt);
 
-    PCLPcPtr pc2 = hdl64RIConverter.convertRI2PC(ri);
+    /* nRI -> encoded nRI */
+    cv::Mat yuvRi = jpegEncoder.rgb2yuv(nRi);
+    jpegEncoder.encodeYUV(yuvRi, pkt);
 
-    /* PC Visualization */
-    visualizer.setViewer(pc);
-    for(int i = 0; i < 10; i++) {
-      visualizer.show(100);
+    debug_print("PKT INFO: size(%d), side_data_elems(%d)", pkt.size, pkt.side_data_elems);
+
+    /* encoded nRI -> decoded nRI */
+    if(pkt.size > 0) {
+      AVPacket decodingPkt;
+      av_packet_from_data(&decodingPkt, pkt.data, pkt.size);
+      decodingPkt.side_data_elems = 0;
+
+      cv::Mat yuvDecFrame;
+
+      jpegDecoder.decodeYUV(decodingPkt, yuvDecFrame);
+      cv::Mat nRiReconstructed = jpegDecoder.yuv2rgb(yuvDecFrame);
+
+      cv::imshow("test", nRi);
+      cv::imshow("test2", nRiReconstructed);
+      int k = cv::waitKey(1);
+
+      cv::Mat riReconstructed;
+      hdl64RIConverter.denormRi(&nRiReconstructed, riMax, &riReconstructed);
+
+      PCLPcPtr pcReconstructed = hdl64RIConverter.convertRI2PC(&riReconstructed);
+
+      /* PC Visualization */
+      visualizer.setViewer(pcReconstructed);
+      for(int i = 0; i < 1; i++) {
+        visualizer.show(50);
+      }
+
+      riReconstructed.release();
+      nRiReconstructed.release();
+      pcReconstructed->clear();
     }
 
     pc->clear();
     ri->release();
     delete ri;
+    nRi.release();
+
   }
 
   return 0;
