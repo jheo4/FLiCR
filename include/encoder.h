@@ -24,7 +24,7 @@ class Encoder
   public:
     Encoder();
     void init(std::string codec, int width, int height, int br, int fps);
-    cv::Mat gray2yuv(cv::Mat &inFrame);
+    cv::Mat rgb2yuv(cv::Mat &inFrame);
     void encodeYUV(cv::Mat &inFrame, AVPacket &outPkt);
     void saveAsFile(AVPacket &inPkt, std::string fn);
 };

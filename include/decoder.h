@@ -20,14 +20,15 @@ class Decoder
     AVCodec *dec;
     AVCodecContext *decCtx;
     AVFrame *decFrame;
+    int frameWidth, frameHeight;
     uint8_t *decFB;
     int decFrameSize;
 
   public:
     Decoder();
     void init(std::string codec, int width, int height);
-    cv::Mat yuv2gray(cv::Mat &inFrame);
-    void decodeYUV(uint8_t *inFrameBuffer, int inFrameSize, cv::Mat &outFrame);
+    cv::Mat yuv2rgb(cv::Mat &inFrame);
+    void decodeYUV(AVPacket &inPkt, cv::Mat &outFrame);
     void saveAsFile(cv::Mat &inFrame, std::string fn);
 };
 

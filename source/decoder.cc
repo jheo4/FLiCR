@@ -4,11 +4,17 @@ Decoder::Decoder()
 {
   av_register_all();
   avcodec_register_all();
+
+  frameWidth = 0;
+  frameHeight = 0;
 }
 
 
 void Decoder::init(std::string codec, int width, int height)
 {
+  frameWidth = width;
+  frameHeight = height;
+
   dec = avcodec_find_decoder_by_name(codec.c_str());
   if(!dec) {
     debug_print("codec %s not found", codec.c_str());
@@ -17,16 +23,8 @@ void Decoder::init(std::string codec, int width, int height)
 
   decCtx = avcodec_alloc_context3(dec);
   decCtx->max_b_frames = 0;
-  //decCtx->width   = width;
-  //decCtx->height  = height;
-  //if (strcmp(codec.c_str(), "h264") == 0 ||
-  //    strcmp(codec.c_str(), "h264_cuvid") == 0)
-  //{
-  //  decCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-  //}
-  //if (strcmp(codec.c_str(), "mjpeg") == 0) {
-  //  decCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
-  //}
+  decCtx->time_base = AVRational{1, 60};
+  decCtx->framerate = AVRational{60, 1};
 
   int ret = avcodec_open2(decCtx, dec, NULL);
   if(ret < 0) {
@@ -34,56 +32,49 @@ void Decoder::init(std::string codec, int width, int height)
     return;
   }
 
-  decFrame = av_frame_alloc();
-  decFrame->width = width;
-  decFrame->height = height;
+  AVPixelFormat fmt;
   if (strcmp(codec.c_str(), "h264") == 0 ||
-      strcmp(codec.c_str(), "h264_cuvid") == 0)
-  {
-    decFrame->format = AV_PIX_FMT_YUV420P;
+      strcmp(codec.c_str(), "h264_cuvid")) {
+    fmt = AV_PIX_FMT_YUV420P;
   }
   if (strcmp(codec.c_str(), "mjpeg") == 0) {
-    decFrame->format = AV_PIX_FMT_YUVJ420P;
+    fmt = AV_PIX_FMT_YUVJ420P;
   }
 
-  decFrameSize = av_image_get_buffer_size((AVPixelFormat)decFrame->format, decFrame->width, decFrame->height, 1);
+  decFrame = av_frame_alloc();
+  decFrame->width = frameWidth;
+  decFrame->height = frameHeight;
+  decFrame->format = fmt;
+  decFrameSize = av_image_get_buffer_size(fmt, decFrame->width, decFrame->height, 1);
   decFB = (uint8_t*)av_malloc(decFrameSize);
 
-  av_image_fill_arrays(decFrame->data, decFrame->linesize, decFB, static_cast<AVPixelFormat>(decFrame->format),
+  av_image_fill_arrays(decFrame->data, decFrame->linesize, decFB, fmt,
                        decFrame->width, decFrame->height, 1);
 }
 
 
-cv::Mat Decoder::yuv2gray(cv::Mat &inFrame)
+cv::Mat Decoder::yuv2rgb(cv::Mat &inFrame)
 {
-  cv::Mat rgbFrame, grayFrame;
+  cv::Mat rgbFrame;
 
   //cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_NV12);
   debug_print("flagA");
   if(!inFrame.empty()){
-    cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_I420);
+    //cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_I420);
+    cv::cvtColor(inFrame, rgbFrame, cv::COLOR_YUV2RGB_NV12);
     debug_print("non empty -- A");
   }
   else debug_print("empty -- A");
-  if(!rgbFrame.empty()) {
-    cv::cvtColor(rgbFrame, grayFrame, cv::COLOR_RGB2GRAY);
-    debug_print("non empty -- B");
-  }
-  else debug_print("empty -- B");
-  return grayFrame;
+  return rgbFrame;
 }
 
 
-void Decoder::decodeYUV(uint8_t *inFrameBuffer, int inFrameSize, cv::Mat &outFrame)
+void Decoder::decodeYUV(AVPacket &inPkt, cv::Mat &outFrame)
 {
-  AVPacket decPkt;
-  av_packet_from_data(&decPkt, inFrameBuffer, inFrameSize);
-  decPkt.side_data_elems = 0;
-
-  outFrame = cv::Mat::zeros(decFrame->height*1.5, decFrame->width, CV_8UC1);
+  outFrame = cv::Mat::zeros(frameHeight*1.5, frameWidth, CV_8UC1);
 
   //double st = getTsNow();
-  int ret = avcodec_send_packet(decCtx, &decPkt);
+  int ret = avcodec_send_packet(decCtx, &inPkt);
   while(ret >= 0) {
     ret = avcodec_receive_frame(decCtx, decFrame);
     if(ret == 0) {

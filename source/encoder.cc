@@ -19,6 +19,7 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
   encCtx->width     = width;
   encCtx->height    = height;
   encCtx->bit_rate  = br;
+  encCtx->pix_fmt   = AV_PIX_FMT_YUV420P;
   encCtx->time_base = AVRational{1, fps};
   encCtx->framerate = AVRational{fps, 1};
   encCtx->delay     = 0;
@@ -27,15 +28,15 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
 
   if (strcmp(encCtx->codec->name, "libx264") == 0)
   {
-    encCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    av_opt_set(encCtx->priv_data, "preset", "fast", 0);
+    debug_print("libx264 Setting");
+    av_opt_set(encCtx->priv_data, "preset", "veryslow", 0);
     av_opt_set(encCtx->priv_data, "tune", "zerolatency", 0);
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
   }
   if (strcmp(encCtx->codec->name, "h264_nvenc") == 0 ||
       strcmp(encCtx->codec->name, "nvenc_h264") == 0 )
   {
-    encCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    debug_print("h264_nvenc Setting");
     av_opt_set(encCtx->priv_data, "preset", "ll", 0);
     av_opt_set(encCtx->priv_data, "zerolatency", "true", 0);
     av_opt_set(encCtx->priv_data, "delay", 0, 0);
@@ -43,6 +44,7 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
   }
   if (strcmp(encCtx->codec->name, "mjpeg") == 0) {
+    debug_print("mjpeg Setting");
     encCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
   }
 
@@ -62,23 +64,16 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
 }
 
 
-cv::Mat Encoder::gray2yuv(cv::Mat &inFrame)
+cv::Mat Encoder::rgb2yuv(cv::Mat &rgbFrame)
 {
-  cv::Mat rgbFrame, yuvFrame;
-  //rgbFrame = cv::Mat::zeros(inFrame.rows, inFrame.cols, CV_8UC3);
-  //yuvFrame = cv::Mat::zeros(inFrame.rows*1.5, inFrame.cols, CV_8UC1);
-
-  cv::cvtColor(inFrame, rgbFrame, cv::COLOR_GRAY2RGB);
-  //cv::cvtColor(rgbFrame, yuvFrame, cv::COLOR_RGB2YUV_I420);
+  cv::Mat yuvFrame;
   cv::cvtColor(rgbFrame, yuvFrame, cv::COLOR_RGB2YUV_I420);
-
   return yuvFrame;
 }
 
 
 void Encoder::encodeYUV(cv::Mat &inFrame, AVPacket &outPkt)
 {
-  av_init_packet(&outPkt);
   av_image_fill_arrays(encFrame->data, encFrame->linesize, inFrame.data, static_cast<AVPixelFormat>(encFrame->format),
                        encFrame->width, encFrame->height, 1);
 
