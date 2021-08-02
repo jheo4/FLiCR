@@ -93,6 +93,7 @@ int main() {
       visualizer.setViewer(pcReconstructed);
       for(int i = 0; i < 1; i++) {
         visualizer.show(50);
+        visualizer.saveToFile("pc_h264_" + std::to_string(seq) + ".png");
       }
 
       riReconstructed.release();

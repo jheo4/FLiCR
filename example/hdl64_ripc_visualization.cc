@@ -24,6 +24,7 @@ int main() {
 
   /* Set classes */
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
+  HDL64RIConverter hdl64RiConverter;
   Visualizer pcVisualizer;
   pcVisualizer.initViewerXYZ();
   double st, et, e2e;
@@ -35,18 +36,32 @@ int main() {
     e2e = 0;
 
     /* PC Read */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc = hdl64PCReader.getNextPC();
+    PCLPcPtr pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
     hdl64PCReader.printPCInfo(pc);
 
-    /* PC Visualization */
-    pcVisualizer.setViewer(pc);
+
+    /* PC-RI-nRI-RI-riPC */
+    cv::Mat *ri = hdl64RiConverter.convertPC2RI(pc);
+    cv::Mat nRi;
+    double riMax = hdl64RiConverter.normRi(ri, &nRi);
+    hdl64RiConverter.getRIQuantError(ri, riMax, &nRi);
+
+    cv::Mat riReconstructed;
+    hdl64RiConverter.denormRi(&nRi, riMax, &riReconstructed);
+
+    PCLPcPtr pcReconstructed = hdl64RiConverter.convertRI2PC(&riReconstructed);
+
+    /* riPC Visualization */
+    pcVisualizer.setViewer(pcReconstructed);
     for(int i = 0; i < 1; i++) {
       pcVisualizer.show(100);
-      pcVisualizer.saveToFile("orig_pc_" + std::to_string(seq) + ".png");
+      pcVisualizer.saveToFile("pc_" + std::to_string(riCol) + "_" + std::to_string(seq) + ".png");
     }
 
     pc->clear();
+    ri->release();
+    pcReconstructed->clear();
   }
 
   return 0;
