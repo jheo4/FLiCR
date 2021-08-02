@@ -26,7 +26,7 @@ void Visualizer::setViewer(pcl::PointCloud<pcl::PointXYZ>::ConstPtr pc)
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
   viewer->addCoordinateSystem(1.0);
   viewer->initCameraParameters();
-  viewer->setCameraPosition(0, 40, 3,  0, 0, 0,  0, 0, 1);
+  viewer->setCameraPosition(0, 60, 20,  0, 0, 0,  0, 0, 1);
 }
 
 
@@ -36,6 +36,19 @@ void Visualizer::show(int tickPeriod)
   {
     viewer->spinOnce(tickPeriod);
     std::this_thread::sleep_for(std::chrono::milliseconds(tickPeriod));
+  }
+  else
+  {
+    debug_print("Viewer is not set...");
+  }
+}
+
+
+void Visualizer::saveToFile(std::string fileName)
+{
+  if(viewer != nullptr)
+  {
+    viewer->saveScreenshot(fileName);
   }
   else
   {

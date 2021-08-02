@@ -16,6 +16,7 @@ class Visualizer
     void initViewerXYZ();
     void setViewer(pcl::PointCloud<pcl::PointXYZ>::ConstPtr pc);
     void show(int tickPeriod=100);
+    void saveToFile(std::string fileName);
 };
 
 #endif
