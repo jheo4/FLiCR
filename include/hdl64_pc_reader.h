@@ -13,8 +13,10 @@ class HDL64PCReader: public BagReader
   public:
     HDL64PCReader();
     HDL64PCReader(std::string bagFile, std::string topic);
-    PCLPcPtr getNextPC();
-    void printPCInfo(PCLPcPtr pc);
+    PclPcXYZ getNextPC();
+    PclPcXYZI getNextPCI();
+    void printPCInfo(PclPcXYZ pc);
+    void printPCInfo(PclPcXYZI pc);
 };
 
 #endif

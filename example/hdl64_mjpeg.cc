@@ -43,7 +43,7 @@ int main() {
     e2e = 0;
 
     /* PC Read */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc = hdl64PCReader.getNextPC();
+    PclPcXYZ pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
     hdl64PCReader.printPCInfo(pc);
 
@@ -59,6 +59,8 @@ int main() {
     cv::Mat nRi;
     double riMax = hdl64RIConverter.normRi(ri, &nRi);
     hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
+
+    hdl64RIConverter.saveRiToFile(nRi, "test.ppm", HDL64RIConverter::FileFormat::PPM);
 
     AVPacket pkt;
     av_init_packet(&pkt);
@@ -87,7 +89,7 @@ int main() {
       cv::Mat riReconstructed;
       hdl64RIConverter.denormRi(&nRiReconstructed, riMax, &riReconstructed);
 
-      PCLPcPtr pcReconstructed = hdl64RIConverter.convertRI2PC(&riReconstructed);
+      PclPcXYZ pcReconstructed = hdl64RIConverter.convertRI2PC(&riReconstructed);
 
       /* PC Visualization */
       visualizer.setViewer(pcReconstructed);

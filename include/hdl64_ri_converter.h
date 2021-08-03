@@ -15,11 +15,11 @@ class HDL64RIConverter
 
   public:
     HDL64RIConverter();
-    cv::Mat* convertPC2RI(PCLPcPtr pc);
-    cv::Mat* convertPC2RIwithXYZ(PCLPcPtr pc);
-    PCLPcPtr convertRI2PC(cv::Mat *ri);
+    cv::Mat* convertPC2RI(PclPcXYZ pc);
+    cv::Mat* convertPC2RIwithXYZ(PclPcXYZ pc);
+    PclPcXYZ convertRI2PC(cv::Mat *ri);
 
-    int getRIConvError(PCLPcPtr pc, cv::Mat *ri);
+    int getRIConvError(PclPcXYZ pc, cv::Mat *ri);
     double getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi);
     double getE2Error(cv::Mat *ri, cv::Mat *nRi){};
 

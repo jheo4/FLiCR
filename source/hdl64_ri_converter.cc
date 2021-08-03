@@ -16,7 +16,7 @@ HDL64RIConverter::HDL64RIConverter()
 }
 
 
-cv::Mat* HDL64RIConverter::convertPC2RIwithXYZ(PCLPcPtr pc)
+cv::Mat* HDL64RIConverter::convertPC2RIwithXYZ(PclPcXYZ pc)
 {
   cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC4, cv::Scalar(0.f, 0.f, 0.f, 0.f));
 
@@ -40,7 +40,7 @@ cv::Mat* HDL64RIConverter::convertPC2RIwithXYZ(PCLPcPtr pc)
 }
 
 
-cv::Mat* HDL64RIConverter::convertPC2RI(PCLPcPtr pc)
+cv::Mat* HDL64RIConverter::convertPC2RI(PclPcXYZ pc)
 {
   cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
   double xSum(0), ySum(0), zSum(0), rhoSum(0);
@@ -75,11 +75,11 @@ cv::Mat* HDL64RIConverter::convertPC2RI(PCLPcPtr pc)
 }
 
 
-PCLPcPtr HDL64RIConverter::convertRI2PC(cv::Mat *ri)
+PclPcXYZ HDL64RIConverter::convertRI2PC(cv::Mat *ri)
 {
   double xSum(0), ySum(0), zSum(0), rhoSum(0);
 
-  PCLPcPtr pc(new pcl::PointCloud<PCLPtXYZ>);
+  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
 
   for(int y = 0; y <= ri->rows; y++) {
     for(int x = 0; x <= ri->cols; x++) {
@@ -95,7 +95,7 @@ PCLPcPtr HDL64RIConverter::convertRI2PC(cv::Mat *ri)
         float rTheta = theta * PI/180.0f;
         float rPi    = pi    * PI/180.0f;
 
-        PCLPtXYZ p;
+        PclXYZ p;
 
         p.x = rho * std::sin(rTheta) * std::cos(rPi);
         p.y = rho * std::sin(rTheta) * std::sin(rPi);
@@ -133,14 +133,14 @@ void HDL64RIConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat
   }
 }
 
-int HDL64RIConverter::getRIConvError(PCLPcPtr pc, cv::Mat *ri)
+int HDL64RIConverter::getRIConvError(PclPcXYZ pc, cv::Mat *ri)
 {
   int riElem = cv::countNonZero(*ri);
   int pcElem = pc->size();
   int error = (pcElem > riElem) ? pcElem - riElem : riElem - pcElem;
   debug_print("pcElem(%d), riElem(%d): error(%d) %f%%", pcElem, riElem, error, (double)error/pcElem*100);
 
-  PCLPcPtr reconstructedPC = convertRI2PC(ri);
+  PclPcXYZ reconstructedPC = convertRI2PC(ri);
   debug_print("pcElem(%d), pcFromRiElem(%ld): error(%ld)", pcElem, reconstructedPC->size(), pcElem - reconstructedPC->size());
   return error;
 }
@@ -158,8 +158,8 @@ double HDL64RIConverter::getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi)
 
   debug_print("rho diff: mean(%f), stddev(%f)", mean.at<double>(0), stddev.at<double>(0));
 
-  PCLPcPtr pc  = convertRI2PC(ri);
-  PCLPcPtr dnPc = convertRI2PC(&dnRi);
+  PclPcXYZ pc  = convertRI2PC(ri);
+  PclPcXYZ dnPc = convertRI2PC(&dnRi);
 
   debug_print("pc elem(%d) dnPC elem(%d)", pc->size(), dnPc->size());
 

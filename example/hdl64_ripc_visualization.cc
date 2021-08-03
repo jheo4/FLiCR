@@ -36,7 +36,7 @@ int main() {
     e2e = 0;
 
     /* PC Read */
-    PCLPcPtr pc = hdl64PCReader.getNextPC();
+    PclPcXYZ pc = hdl64PCReader.getNextPC();
     if(pc == nullptr) break;
     hdl64PCReader.printPCInfo(pc);
 
@@ -50,7 +50,7 @@ int main() {
     cv::Mat riReconstructed;
     hdl64RiConverter.denormRi(&nRi, riMax, &riReconstructed);
 
-    PCLPcPtr pcReconstructed = hdl64RiConverter.convertRI2PC(&riReconstructed);
+    PclPcXYZ pcReconstructed = hdl64RiConverter.convertRI2PC(&riReconstructed);
 
     /* riPC Visualization */
     pcVisualizer.setViewer(pcReconstructed);

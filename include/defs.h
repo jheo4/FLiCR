@@ -15,7 +15,9 @@
 #define HDL64_HORIZONTAL_DEGREE 360.0f
 
 #include <pcl/common/common_headers.h>
-using PCLPcPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
-using PCLPtXYZ = pcl::PointXYZ;
+using PclXYZ    = pcl::PointXYZ;
+using PclXYZI   = pcl::PointXYZI;
+using PclPcXYZ  = pcl::PointCloud<PclXYZ>::Ptr;
+using PclPcXYZI = pcl::PointCloud<PclXYZI>::Ptr;
 #endif
 
