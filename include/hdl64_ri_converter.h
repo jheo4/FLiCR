@@ -25,6 +25,9 @@ class HDL64RIConverter
 
     double normRi(cv::Mat *oRi, cv::Mat *nRi);
     void denormRi(cv::Mat *nRi, double max, cv::Mat *dnRi);
+
+    enum FileFormat {PNG, PPM};
+    void saveRiToFile(cv::Mat ri, std::string fileName, FileFormat format = PNG);
 };
 
 #endif

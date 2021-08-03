@@ -117,6 +117,22 @@ PCLPcPtr HDL64RIConverter::convertRI2PC(cv::Mat *ri)
 }
 
 
+void HDL64RIConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat format)
+{
+  std::vector<int> imwriteFlag;
+  switch(format)
+  {
+  case PNG:
+    cv::imwrite(fileName, ri);
+    break;
+  case PPM:
+    imwriteFlag.push_back(cv::IMWRITE_PXM_BINARY);
+    //imwriteFlag.push_back(9);
+    cv::imwrite(fileName, ri, imwriteFlag);
+    break;
+  }
+}
+
 int HDL64RIConverter::getRIConvError(PCLPcPtr pc, cv::Mat *ri)
 {
   int riElem = cv::countNonZero(*ri);
