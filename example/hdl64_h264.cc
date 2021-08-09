@@ -49,7 +49,7 @@ int main() {
 
     /* PC -> RI */
     st = getTsNow();
-    cv::Mat *ri = hdl64RIConverter.convertPC2RI(pc);
+    cv::Mat *ri = hdl64RIConverter.convertPc2Ri(pc);
     et = getTsNow();
     debug_print("RI info: %dx%d, convTime(%f ms)", ri->cols, ri->rows, et-st);
 
@@ -57,7 +57,8 @@ int main() {
 
     /* RI -> nRI */
     cv::Mat nRi;
-    double riMax = hdl64RIConverter.normRi(ri, &nRi);
+    double riMax;
+    hdl64RIConverter.normalizeRi(ri, &nRi, &riMax);
     hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
 
     AVPacket pkt;
@@ -85,9 +86,9 @@ int main() {
       int k = cv::waitKey(1);
 
       cv::Mat riReconstructed;
-      hdl64RIConverter.denormRi(&nRiReconstructed, riMax, &riReconstructed);
+      hdl64RIConverter.denormalizeRi(&nRiReconstructed, riMax, &riReconstructed);
 
-      PclPcXYZ pcReconstructed = hdl64RIConverter.convertRI2PC(&riReconstructed);
+      PclPcXYZ pcReconstructed = hdl64RIConverter.reconstructPcFromRi(&riReconstructed);
 
       /* PC Visualization */
       visualizer.setViewer(pcReconstructed);

@@ -42,15 +42,16 @@ int main() {
 
 
     /* PC-RI-nRI-RI-riPC */
-    cv::Mat *ri = hdl64RiConverter.convertPC2RI(pc);
+    cv::Mat *ri = hdl64RiConverter.convertPc2Ri(pc);
     cv::Mat nRi;
-    double riMax = hdl64RiConverter.normRi(ri, &nRi);
+    double riMax;
+    hdl64RiConverter.normalizeRi(ri, &nRi, &riMax);
     hdl64RiConverter.getRIQuantError(ri, riMax, &nRi);
 
     cv::Mat riReconstructed;
-    hdl64RiConverter.denormRi(&nRi, riMax, &riReconstructed);
+    hdl64RiConverter.denormalizeRi(&nRi, riMax, &riReconstructed);
 
-    PclPcXYZ pcReconstructed = hdl64RiConverter.convertRI2PC(&riReconstructed);
+    PclPcXYZ pcReconstructed = hdl64RiConverter.reconstructPcFromRi(&riReconstructed);
 
     /* riPC Visualization */
     pcVisualizer.setViewer(pcReconstructed);
@@ -66,3 +67,4 @@ int main() {
 
   return 0;
 }
+
