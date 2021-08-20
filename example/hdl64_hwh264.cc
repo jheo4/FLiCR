@@ -65,8 +65,11 @@ int main() {
     av_init_packet(&pkt);
 
     /* nRI -> encoded nRI */
+    st = getTsNow();
     cv::Mat yuvRi = encoder.rgb2yuv(nRi);
     encoder.encodeYUV(yuvRi, pkt);
+    et = getTsNow();
+    std::cout << "encode time: " << et-st << std::endl;
 
     debug_print("PKT INFO: size(%d), side_data_elems(%d)", pkt.size, pkt.side_data_elems);
 
@@ -78,8 +81,11 @@ int main() {
 
       cv::Mat yuvDecFrame;
 
+      st = getTsNow();
       decoder.decodeYUV(decodingPkt, yuvDecFrame);
       cv::Mat nRiReconstructed = decoder.yuv2rgb(yuvDecFrame);
+      et = getTsNow();
+      std::cout << "decode time: " << et-st << std::endl;
 
       cv::imshow("test", nRi);
       cv::imshow("test2", nRiReconstructed);
