@@ -221,6 +221,8 @@ void HDL64RIConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat
 
 int HDL64RIConverter::getRIConvError(PclPcXYZ pc, cv::Mat *ri)
 {
+  //cv::Mat rgbRi;
+  //cv::cvtColor(*ri, rgbRi, cv::COLOR_GRAY2RGB);
   int riElem = cv::countNonZero(*ri);
   int pcElem = pc->size();
   int error = (pcElem > riElem) ? pcElem - riElem : riElem - pcElem;
@@ -263,8 +265,7 @@ void HDL64RIConverter::normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *max
   cv::minMaxLoc(*origRi, &min, maxRho, &minP, &maxP);
 
   cv::Mat temp;
-  cv::normalize(*origRi, temp, 0, 255, cv::NORM_MINMAX, CV_8UC1); // error here...
-  cv::cvtColor(temp, *normRi, cv::COLOR_GRAY2RGB);
+  cv::normalize(*origRi, *normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
   debug_print("min/max: %f %f", min, *maxRho);
 }
@@ -291,9 +292,7 @@ void HDL64RIConverter::normalizeRiWithI(cv::Mat *origRiWithI, cv::Mat *normRiWit
 
 void HDL64RIConverter::denormalizeRi(cv::Mat *normRi, double maxRho, cv::Mat *denormRi)
 {
-  cv::Mat temp;
-  cv::cvtColor(*normRi, temp, cv::COLOR_RGB2GRAY);
-  cv::normalize(temp, *denormRi, 0, maxRho, cv::NORM_MINMAX, CV_32FC1);
+  cv::normalize(*normRi, *denormRi, 0, maxRho, cv::NORM_MINMAX, CV_32FC1);
 }
 
 

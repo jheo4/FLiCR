@@ -69,6 +69,15 @@ cv::Mat Decoder::yuv2rgb(cv::Mat &inFrame)
 }
 
 
+cv::Mat Decoder::yuv2gray(cv::Mat &inFrame)
+{
+  cv::Mat grayFrame;
+  cv::cvtColor(inFrame, grayFrame, cv::COLOR_YUV2GRAY_I420);
+
+  return grayFrame;
+}
+
+
 void Decoder::decodeYUV(AVPacket &inPkt, cv::Mat &outFrame)
 {
   outFrame = cv::Mat::zeros(frameHeight*1.5, frameWidth, CV_8UC1);

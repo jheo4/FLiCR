@@ -28,6 +28,7 @@ class Decoder
     Decoder();
     void init(std::string codec, int width, int height);
     cv::Mat yuv2rgb(cv::Mat &inFrame);
+    cv::Mat yuv2gray(cv::Mat &inFrame);
     void decodeYUV(AVPacket &inPkt, cv::Mat &outFrame);
     void saveAsFile(cv::Mat &inFrame, std::string fn);
 };

@@ -72,6 +72,20 @@ cv::Mat Encoder::rgb2yuv(cv::Mat &rgbFrame)
 }
 
 
+cv::Mat Encoder::gray2yuv(cv::Mat &grayFrame)
+{
+  /*
+  std::vector<cv::Mat> yuvTemp;
+  yuvTemp.push_back(grayFrame);
+  yuvTemp.push_back(cv::Mat::ones(grayFrame.size(), CV_8UC1));
+  yuvTemp.push_back(cv::Mat::ones(grayFrame.size(), CV_8UC1));
+  */
+  cv::Mat rgbTemp;
+  cv::cvtColor(grayFrame, rgbTemp, cv::COLOR_GRAY2RGB);
+  return rgb2yuv(rgbTemp);
+}
+
+
 void Encoder::encodeYUV(cv::Mat &inFrame, AVPacket &outPkt)
 {
   av_image_fill_arrays(encFrame->data, encFrame->linesize, inFrame.data, static_cast<AVPixelFormat>(encFrame->format),
