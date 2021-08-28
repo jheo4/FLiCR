@@ -29,7 +29,7 @@ int main() {
   visualizer.initViewerXYZ();
 
   Encoder encoder;
-  encoder.init("mjpeg", riCol, riRow, 40000, 30);
+  encoder.init("mjpeg", riCol, riRow, 4000000, 30);
   Decoder decoder;
   decoder.init("mjpeg", riCol, riRow);
 
@@ -61,14 +61,15 @@ int main() {
     hdl64RIConverter.normalizeRi(ri, &nRi, &riMax);
     hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
 
-    hdl64RIConverter.saveRiToFile(nRi, "test.ppm", HDL64RIConverter::FileFormat::PPM);
-
     AVPacket pkt;
     av_init_packet(&pkt);
 
     /* nRI -> encoded nRI */
-    cv::Mat yuvRi = encoder.rgb2yuv(nRi);
+    st = getTsNow();
+    cv::Mat yuvRi = encoder.gray2yuv(nRi);
     encoder.encodeYUV(yuvRi, pkt);
+    et = getTsNow();
+    std::cout << "encode time: " << et-st << std::endl;
 
     debug_print("PKT INFO: size(%d), side_data_elems(%d)", pkt.size, pkt.side_data_elems);
 
@@ -81,7 +82,7 @@ int main() {
       cv::Mat yuvDecFrame;
 
       decoder.decodeYUV(decodingPkt, yuvDecFrame);
-      cv::Mat nRiReconstructed = decoder.yuv2rgb(yuvDecFrame);
+      cv::Mat nRiReconstructed = decoder.yuv2gray(yuvDecFrame);
 
       cv::imshow("test", nRi);
       cv::imshow("test2", nRiReconstructed);

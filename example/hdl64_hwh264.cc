@@ -29,7 +29,7 @@ int main() {
   visualizer.initViewerXYZ();
 
   Encoder encoder;
-  encoder.init("h264_nvenc", riCol, riRow, 40000, 30);
+  encoder.init("h264_nvenc", riCol, riRow, 40000000, 30);
   Decoder decoder;
   decoder.init("h264_cuvid", riCol, riRow);
 
@@ -66,7 +66,7 @@ int main() {
 
     /* nRI -> encoded nRI */
     st = getTsNow();
-    cv::Mat yuvRi = encoder.rgb2yuv(nRi);
+    cv::Mat yuvRi = encoder.gray2yuv(nRi);
     encoder.encodeYUV(yuvRi, pkt);
     et = getTsNow();
     std::cout << "encode time: " << et-st << std::endl;
@@ -83,7 +83,7 @@ int main() {
 
       st = getTsNow();
       decoder.decodeYUV(decodingPkt, yuvDecFrame);
-      cv::Mat nRiReconstructed = decoder.yuv2rgb(yuvDecFrame);
+      cv::Mat nRiReconstructed = decoder.yuv2gray(yuvDecFrame);
       et = getTsNow();
       std::cout << "decode time: " << et-st << std::endl;
 
