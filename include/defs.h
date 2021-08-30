@@ -3,6 +3,8 @@
 
 #define PI 3.14159266
 
+#define KITTI_DATASET_FREQUENCY 10
+
 // https://bit.ly/3gHtGzf
 #define HDL64_THETA_PRECISION 0.4187
 // #define HDL64_PI_PRECISION 0.703125    // 512
