@@ -21,10 +21,6 @@ int main() {
   std::string kittiLeftColImage = config["kitti_left_col_image_topic"].as<std::string>();
   std::string kittiVelodyne = config["kitti_velodyne_topic"].as<std::string>();
 
-  int riRow = (int)(HDL64_VERTICAL_DEGREE / HDL64_THETA_PRECISION);
-  int riCol = (int)(HDL64_HORIZONTAL_DEGREE / HDL64_PI_PRECISION);
-
-
   /* Set classes */
   HDL64PCReader hdl64PCReader(kittiBagFile, kittiVelodyne);
   HDL64RIConverter hdl64RiConverter;

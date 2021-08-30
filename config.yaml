@@ -10,6 +10,8 @@ kitti_right_col_info_topic: "/kitti/camera_color_right/camera_info" # sensor_msg
 kitti_right_col_image_topic: "/kitti/camera_color_right/image_raw"  # sensor_msgs/Image
 
 kitti_velodyne_topic: "/kitti/velo/pointcloud" # sensor_msgs/PointCloud2
+kitti_imu_topic: "/kitti/oxts/imu" # sensor_msgs/Imu
+kitti_gps_topic: "/kitti/oxts/gps/vel" # sensor_msgs/Imu
 
 
 l515_bag_file: ""
