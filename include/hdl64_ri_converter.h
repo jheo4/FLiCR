@@ -26,6 +26,7 @@ class HDL64RIConverter
     double getE2Error(cv::Mat *ri, cv::Mat *nRi){};
 
     void normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *maxRho);
+    void normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *minRho, double *maxRho);
     void normalizeRiWithI(cv::Mat *origRiWithI, cv::Mat *normRiWithI, double *maxRho, double *maxInt);
     void denormalizeRi(cv::Mat *normRi, double maxRho, cv::Mat *denormRi);
     void denormalizeRiWithI(cv::Mat *normRiWithI, double maxRho, double maxInt, cv::Mat *denormRiWithI);

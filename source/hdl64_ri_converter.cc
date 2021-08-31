@@ -258,16 +258,22 @@ double HDL64RIConverter::getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi)
 }
 
 
-void HDL64RIConverter::normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *maxRho)
+void HDL64RIConverter::normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *minRho, double *maxRho)
 {
-  double min;
   cv::Point minP, maxP;
-  cv::minMaxLoc(*origRi, &min, maxRho, &minP, &maxP);
+  cv::minMaxLoc(*origRi, minRho, maxRho, &minP, &maxP);
 
   cv::Mat temp;
   cv::normalize(*origRi, *normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
-  debug_print("min/max: %f %f", min, *maxRho);
+  debug_print("min/max: %f %f", *minRho, *maxRho);
+}
+
+
+void HDL64RIConverter::normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *maxRho)
+{
+  double min;
+  normalizeRi(origRi, normRi, &min, maxRho);
 }
 
 
