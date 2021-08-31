@@ -20,6 +20,7 @@ set(PCC_LINKER_LIBS "")
 
 # Include cmake modules
 include_directories("include")
+include(cmake/boost.cmake)
 include(cmake/rosbag.cmake)
 include(cmake/realsense.cmake)
 include(cmake/yaml-cpp.cmake)
