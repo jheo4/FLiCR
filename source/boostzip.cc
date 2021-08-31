@@ -6,7 +6,8 @@ void BoostZip::deflateGzip(char* data, int size, std::vector<char> &compressed)
   namespace bio = boost::iostreams;
 
   bio::filtering_ostreambuf out;
-  out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+  //out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
+  out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_speed)));
   out.push(bio::back_inserter(compressed));
   bio::write(out, data, size);
 }
