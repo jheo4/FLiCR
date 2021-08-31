@@ -13,3 +13,4 @@
 
 #include "./include/encoder.h"
 #include "./include/decoder.h"
+#include "./include/boostzip.h"
