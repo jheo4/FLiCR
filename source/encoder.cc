@@ -32,15 +32,17 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
     av_opt_set(encCtx->priv_data, "preset", "fast", 0);
     av_opt_set(encCtx->priv_data, "tune", "zerolatency", 0);
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
-    av_opt_set_int(encCtx->priv_data, "crf", 0, AV_OPT_SEARCH_CHILDREN);
+    //av_opt_set_int(encCtx->priv_data, "crf", 0, AV_OPT_SEARCH_CHILDREN);
+    av_opt_set(encCtx->priv_data, "qp", "0", 0);
   }
   if (strcmp(encCtx->codec->name, "h264_nvenc") == 0 ||
       strcmp(encCtx->codec->name, "nvenc_h264") == 0 )
   {
     debug_print("h264_nvenc Setting");
-    av_opt_set(encCtx->priv_data, "preset", "slow", 0);
+    av_opt_set(encCtx->priv_data, "preset", "fast", 0);
     av_opt_set(encCtx->priv_data, "delay", 0, 0);
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
+    av_opt_set(encCtx->priv_data, "qp", "0", 0);
     //av_opt_set(encCtx->priv_data, "zerolatency", "true", 0);
     //av_opt_set(encCtx->priv_data, "2pass", "true", 0);
     //av_opt_set_int(encCtx->priv_data, "level", 51, AV_OPT_SEARCH_CHILDREN);
@@ -48,6 +50,7 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
   if (strcmp(encCtx->codec->name, "mjpeg") == 0) {
     debug_print("mjpeg Setting");
     encCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+    av_opt_set(encCtx->priv_data, "qscale", "2", 0);
   }
 
   int ret = avcodec_open2(encCtx, enc, NULL);
