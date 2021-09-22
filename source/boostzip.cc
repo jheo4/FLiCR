@@ -1,13 +1,17 @@
 #include "boostzip.h"
 
-
+// Gzip_compressor: https://www.boost.org/doc/libs/1_62_0/libs/iostreams/doc/classes/gzip.html
+// Zlib details: https://en.wikipedia.org/wiki/Zlib
+// Zlib deflation algo: https://en.wikipedia.org/wiki/LZ77_and_LZ78#LZ77
+// Zlib deflation algo: https://en.wikipedia.org/wiki/Huffman_coding
 void BoostZip::deflateGzip(char* data, int size, std::vector<char> &compressed)
 {
   namespace bio = boost::iostreams;
 
   bio::filtering_ostreambuf out;
   //out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_compression)));
-  out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_speed)));
+  //out.push(bio::gzip_compressor(bio::gzip_params(bio::gzip::best_speed)));
+  out.push(bio::gzip_compressor(bio::gzip_params(1)));
   out.push(bio::back_inserter(compressed));
   bio::write(out, data, size);
 }

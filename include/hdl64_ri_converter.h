@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <types.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/search/kdtree.h>
 #include <opencv2/opencv.hpp>
 #include <defs.h>
 
@@ -21,9 +22,14 @@ class HDL64RIConverter
     PclPcXYZ  reconstructPcFromRi      (cv::Mat *ri);
     PclPcXYZI reconstructPcFromRiWithI (cv::Mat *ri);
 
-    int getRIConvError(PclPcXYZ pc, cv::Mat *ri);
-    double getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi);
-    double getE2Error(cv::Mat *ri, cv::Mat *nRi){};
+    void calcRiQuantError(PclPcXYZ pc, cv::Mat *ri);
+    void calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi);
+
+    float calcNearestDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt);
+    float calcPcAvgDistance(PclPcXYZ pc1, PclPcXYZ pc2, float thresh);
+
+    void calcE2eDistance(PclPcXYZ pc1, PclPcXYZ pc2, float thresh = std::numeric_limits<float>::max());
+    void calcE2eDistance(PclPcXYZ pc, double riMax, cv::Mat *nRi);
 
     void normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *maxRho);
     void normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *minRho, double *maxRho);

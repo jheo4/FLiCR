@@ -53,13 +53,13 @@ int main() {
     et = getTsNow();
     debug_print("RI info: %dx%d, convTime(%f ms)", ri->cols, ri->rows, et-st);
 
-    hdl64RIConverter.getRIConvError(pc, ri); // check PC->RI error
+    //hdl64RIConverter.getRIConvError(pc, ri); // check PC->RI error
 
     /* RI -> nRI */
     cv::Mat nRi;
     double riMax;
     hdl64RIConverter.normalizeRi(ri, &nRi, &riMax);
-    hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
+    //hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
 
     AVPacket pkt;
     av_init_packet(&pkt);
@@ -95,11 +95,15 @@ int main() {
       hdl64RIConverter.denormalizeRi(&nRiReconstructed, riMax, &riReconstructed);
 
       PclPcXYZ pcReconstructed = hdl64RIConverter.reconstructPcFromRi(&riReconstructed);
+      hdl64RIConverter.calcRiQuantError(pc, ri);
+      hdl64RIConverter.calcRiPixNormError(ri, riMax, &nRiReconstructed);
+      if(!pcReconstructed->empty()) hdl64RIConverter.calcE2eDistance(pc, pcReconstructed);
+
 
       /* PC Visualization */
       visualizer.setViewer(pcReconstructed);
       for(int i = 0; i < 1; i++) {
-        visualizer.show(50);
+        visualizer.show(500);
         visualizer.saveToFile("pc_h264HW_" + std::to_string(seq) + ".png");
       }
 

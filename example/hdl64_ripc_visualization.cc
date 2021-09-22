@@ -46,7 +46,7 @@ int main() {
     cv::Mat nRi;
     double riMax;
     hdl64RiConverter.normalizeRi(ri, &nRi, &riMax);
-    hdl64RiConverter.getRIQuantError(ri, riMax, &nRi);
+    hdl64RiConverter.calcRiPixNormError(ri, riMax, &nRi);
 
     cv::Mat riReconstructed;
     hdl64RiConverter.denormalizeRi(&nRi, riMax, &riReconstructed);

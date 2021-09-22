@@ -219,42 +219,86 @@ void HDL64RIConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat
 }
 
 
-int HDL64RIConverter::getRIConvError(PclPcXYZ pc, cv::Mat *ri)
+void HDL64RIConverter::calcRiQuantError(PclPcXYZ pc, cv::Mat *ri)
 {
-  //cv::Mat rgbRi;
-  //cv::cvtColor(*ri, rgbRi, cv::COLOR_GRAY2RGB);
   int riElem = cv::countNonZero(*ri);
   int pcElem = pc->size();
   int error = (pcElem > riElem) ? pcElem - riElem : riElem - pcElem;
-  debug_print("pcElem(%d), riElem(%d): error(%d) %f%%", pcElem, riElem, error, (double)error/pcElem*100);
 
   PclPcXYZ reconstructedPC = reconstructPcFromRi(ri);
-  debug_print("pcElem(%d), pcFromRiElem(%ld): error(%ld)", pcElem, reconstructedPC->size(), pcElem - reconstructedPC->size());
-  return error;
+  printf("========= calcRiQuantError =======\n");
+  printf("\tOrig Points (%d), Ri Points (%d), absdiff (%d, %f%%)\n", pcElem, riElem, error, (double)error/pcElem*100);
+
+  printf("\tOrig Points (%d), Points of PC from Ri (%d)\n", pcElem, reconstructedPC->size());
+  printf("==================================\n");
+
+  reconstructedPC->clear();
 }
 
 
-double HDL64RIConverter::getRIQuantError(cv::Mat *ri, double max, cv::Mat *nRi)
+void HDL64RIConverter::calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
 {
   cv::Mat dnRi, diff;
-  denormalizeRi(nRi, max, &dnRi);
+  cv::Mat mean, stddev;
+
+  denormalizeRi(nRi, riMax, &dnRi);
 
   cv::absdiff(*ri, dnRi, diff);
-
-  cv::Mat mean, stddev;
   cv::meanStdDev(diff, mean, stddev);
 
-  debug_print("rho diff: mean(%f), stddev(%f)", mean.at<double>(0), stddev.at<double>(0));
+  printf("========= calcRiPixNormError =======\n");
+  printf("\tDistance absdiff: mean (%fm), stddev (%fm)\n", mean.at<double>(0), stddev.at<double>(0));
+  printf("====================================\n");
+}
 
-  PclPcXYZ pc   = reconstructPcFromRi(ri);
-  PclPcXYZ dnPc = reconstructPcFromRi(&dnRi);
 
-  debug_print("pc elem(%d) dnPC elem(%d)", pc->size(), dnPc->size());
+float HDL64RIConverter::calcNearestDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt)
+{
+  const int k = 1;
+  std::vector<int> indices(k);
+  std::vector<float> sqrDist(k);
+  tree.nearestKSearch(pt, k, indices, sqrDist);
 
-  pc->clear();
-  dnPc->clear();
+  return sqrDist[0];
+}
 
-  return 0;
+
+float HDL64RIConverter::calcPcAvgDistance(PclPcXYZ pc1, PclPcXYZ pc2, float thresh)
+{
+  int outliers = 0;
+  pcl::search::KdTree<pcl::PointXYZ> kdTree;
+  kdTree.setInputCloud(pc1);
+
+  auto sum = std::accumulate(pc2->begin(), pc2->end(), 0.0f,
+                             [&](float currentSum, const pcl::PointXYZ& pt){
+                               const auto dist = calcNearestDistance(kdTree, pt);
+                               if(dist < thresh) return currentSum + dist;
+                               else {
+                                outliers++;
+                                return currentSum;
+                               }
+                             });
+
+  return sum / (pc2->size() - outliers);
+}
+
+
+void HDL64RIConverter::calcE2eDistance(PclPcXYZ pc1, PclPcXYZ pc2, float thresh)
+{
+  const auto avgDist12 = calcPcAvgDistance(pc1, pc2, thresh);
+  const auto avgDist21 = calcPcAvgDistance(pc2, pc1, thresh);
+
+  float dist = (avgDist21 * 0.5f) + (avgDist12 * 0.5f);
+
+  printf("========= calcE2eDistance =======\n");
+  printf("\tDistance btw 2 pcs: %f\n", dist);
+  printf("====================================\n");
+}
+
+
+void HDL64RIConverter::calcE2eDistance(PclPcXYZ pc, double riMax, cv::Mat *nRi)
+{
+
 }
 
 

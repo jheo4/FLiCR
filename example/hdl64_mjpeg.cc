@@ -53,13 +53,13 @@ int main() {
     et = getTsNow();
     debug_print("RI info: %dx%d, convTime(%f ms)", ri->cols, ri->rows, et-st);
 
-    hdl64RIConverter.getRIConvError(pc, ri); // check PC->RI error
+    hdl64RIConverter.calcRiQuantError(pc, ri); // check PC->RI error
 
     /* RI -> nRI */
     cv::Mat nRi;
     double riMax;
     hdl64RIConverter.normalizeRi(ri, &nRi, &riMax);
-    hdl64RIConverter.getRIQuantError(ri, riMax, &nRi);
+    hdl64RIConverter.calcRiPixNormError(ri, riMax, &nRi);
 
     AVPacket pkt;
     av_init_packet(&pkt);
@@ -81,8 +81,12 @@ int main() {
 
       cv::Mat yuvDecFrame;
 
+      st = getTsNow();
       decoder.decodeYUV(decodingPkt, yuvDecFrame);
       cv::Mat nRiReconstructed = decoder.yuv2gray(yuvDecFrame);
+      et = getTsNow();
+      std::cout << "decode time: " << et-st << std::endl;
+
 
       cv::imshow("test", nRi);
       cv::imshow("test2", nRiReconstructed);
