@@ -2,6 +2,7 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <defs.h>
 
 #ifndef __PCC_VISUALIZER__
 #define __PCC_VISUALIZER__
@@ -14,7 +15,8 @@ class Visualizer
     Visualizer();
     ~Visualizer();
     void initViewerXYZ();
-    void setViewer(pcl::PointCloud<pcl::PointXYZ>::ConstPtr pc);
+    void setViewer(PclPcXYZ pc);
+    void setViewer(PclPcXYZI pc);
     void show(int tickPeriod=100);
     void saveToFile(std::string fileName);
 };

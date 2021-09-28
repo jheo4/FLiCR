@@ -19,10 +19,22 @@ void Visualizer::initViewerXYZ()
   viewer->setBackgroundColor(0, 0, 0);
 }
 
-void Visualizer::setViewer(pcl::PointCloud<pcl::PointXYZ>::ConstPtr pc)
+
+void Visualizer::setViewer(PclPcXYZ pc)
 {
   viewer->removeAllPointClouds();
   viewer->addPointCloud<pcl::PointXYZ>(pc);
+  viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
+  viewer->addCoordinateSystem(1.0);
+  viewer->initCameraParameters();
+  viewer->setCameraPosition(0, 60, 20,  0, 0, 0,  0, 0, 1);
+}
+
+
+void Visualizer::setViewer(PclPcXYZI pc)
+{
+  viewer->removeAllPointClouds();
+  viewer->addPointCloud<pcl::PointXYZI>(pc);
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
   viewer->addCoordinateSystem(1.0);
   viewer->initCameraParameters();
