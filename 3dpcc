@@ -8,6 +8,8 @@
 
 #include "./include/hdl64_pc_reader.h"
 #include "./include/oxts_reader.h"
+#include "./include/pc_reader.h"
+#include "./include/pc_writer.h"
 #include "./include/pc_predictor.h"
 #include "./include/hdl64_ri_converter.h"
 
