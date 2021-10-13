@@ -12,9 +12,15 @@ int main() {
 
 
   PclPcXYZI pc;
+  PclPcXYZ  pcXyz;
 
   st = getTsNow();
   pc = pcReader.readXyziBin("0000000000.bin");
+  pcXyz = pcReader.readXyzFromXyziBin("0000000000.bin");
+
+  pcl::PolygonMeshPtr mesh = nullptr;
+  std:vector<int> partID, pointStates;
+  pcReader.generateMeshFromXyz(pcXyz, mesh, partID, pointStates);
 
   debug_print("points: %d", pc->points.size());
   et = getTsNow();
@@ -23,6 +29,7 @@ int main() {
   pcWriter.writePcd("pc_ncomp.pcd", pc, false);
   pcWriter.writePcd("pc_comp.pcd", pc, true);
   pcWriter.writePly("pc.ply", pc);
+  pcWriter.writePlyFromMesh("pc_mesh.ply", mesh);
 
   PclPcXYZI pc2;
   pc2 = pcReader.readXyziBin("pc.bin");
@@ -36,7 +43,7 @@ int main() {
 
   Visualizer pcVisualizer;
   pcVisualizer.initViewerXYZ();
-  pcVisualizer.setViewer(pc2);
-  pcVisualizer.show(3000);
+  pcVisualizer.setViewer(*mesh);
+  pcVisualizer.show(1000);
 }
 

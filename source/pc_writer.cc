@@ -74,3 +74,9 @@ void PcWriter::writePly(std::string fileName, PclPcXYZI pc)
   pcl::io::savePLYFile(fileName, *pc);
 }
 
+
+void PcWriter::writePlyFromMesh(std::string fileName, pcl::PolygonMeshPtr mesh)
+{
+  pcl::io::savePLYFile(fileName, *mesh);
+}
+

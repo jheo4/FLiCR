@@ -17,6 +17,7 @@ class Visualizer
     void initViewerXYZ();
     void setViewer(PclPcXYZ pc);
     void setViewer(PclPcXYZI pc);
+    void setViewer(pcl::PolygonMesh mesh);
     void show(int tickPeriod=100);
     void saveToFile(std::string fileName);
 };
