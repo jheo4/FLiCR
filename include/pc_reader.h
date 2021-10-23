@@ -25,6 +25,7 @@ class PcReader
 
     PclPcXYZ  readXyzPly (std::string fileName);
     PclPcXYZI readXyziPly(std::string fileName);
+    PclMesh   readMeshPly(std::string fileName);
 
     void generateMeshFromXyz (PclPcXYZ pc, pcl::PolygonMeshPtr &mesh,
                               std::vector<int> partID, std::vector<int> pointStates);

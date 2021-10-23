@@ -7,6 +7,7 @@
 
 // https://bit.ly/3gHtGzf
 #define HDL64_THETA_PRECISION 0.4187
+
 // #define HDL64_PI_PRECISION 0.703125    // 512
 // #define HDL64_PI_PRECISION 0.3515625   // 1024
 // #define HDL64_PI_PRECISION 0.17578125  // 2048
@@ -17,9 +18,11 @@
 #define HDL64_HORIZONTAL_DEGREE 360.0f
 
 #include <pcl/common/common_headers.h>
+#include <pcl/PolygonMesh.h>
 using PclXYZ    = pcl::PointXYZ;
 using PclXYZI   = pcl::PointXYZI;
 using PclPcXYZ  = pcl::PointCloud<PclXYZ>::Ptr;
 using PclPcXYZI = pcl::PointCloud<PclXYZI>::Ptr;
+using PclMesh   = pcl::PolygonMeshPtr;
 #endif
 

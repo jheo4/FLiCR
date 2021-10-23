@@ -42,11 +42,12 @@ void Visualizer::setViewer(PclPcXYZI pc)
 }
 
 
-void Visualizer::setViewer(pcl::PolygonMesh mesh)
+void Visualizer::setViewer(PclMesh mesh)
 {
   viewer->removeAllPointClouds();
   viewer->removeAllShapes();
-  viewer->addPolygonMesh(mesh, "mesh", 0);
+  //viewer->addPolygonMesh(mesh, "mesh", 0);
+  viewer->addPolylineFromPolygonMesh(*mesh, "mesh", 0);
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
   viewer->addCoordinateSystem(1.0);
   viewer->initCameraParameters();

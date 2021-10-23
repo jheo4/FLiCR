@@ -150,6 +150,15 @@ PclPcXYZI PcReader::readXyziPly(std::string fileName)
   return pc;
 }
 
+
+PclMesh PcReader::readMeshPly(std::string fileName)
+{
+  PclMesh mesh(new pcl::PolygonMesh);
+  pcl::io::loadPLYFile(fileName, *mesh);
+  return mesh;
+}
+
+
 void PcReader::generateMeshFromXyz(PclPcXYZ pc, pcl::PolygonMeshPtr &mesh,
                                    std::vector<int> partID, std::vector<int> pointStates)
 {
@@ -174,7 +183,7 @@ void PcReader::generateMeshFromXyz(PclPcXYZ pc, pcl::PolygonMeshPtr &mesh,
   pcl::PolygonMeshPtr tempMeshes(new pcl::PolygonMesh);
   mesh = tempMeshes;
 
-  gpTriangulation.setSearchRadius(0.025);
+  gpTriangulation.setSearchRadius(0.5);
   gpTriangulation.setMu(2.5);
   gpTriangulation.setMaximumNearestNeighbors(100);
   gpTriangulation.setMaximumSurfaceAngle(M_PI/4);

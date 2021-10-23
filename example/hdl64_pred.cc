@@ -78,8 +78,11 @@ int main() {
   VecXyz vel;
   vel.x = (p2.x-p1.x) * KITTI_DATASET_FREQUENCY; vel.y = (p2.y-p1.y) * KITTI_DATASET_FREQUENCY; vel.z = (p2.z-p1.z) * KITTI_DATASET_FREQUENCY;
 
+  st = getTsNow();
   PcPredictor predictor;
   predictedPc2 = predictor.predictNextPc(pc1, vel);
+  et = getTsNow();
+  debug_print("pred time: %f", et-st);
 
   cv::Mat *pRi2 = hdl64RiConverter.convertPc2Ri(predictedPc2);
   cv::Mat nPredRi2;

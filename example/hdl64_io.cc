@@ -19,7 +19,7 @@ int main() {
   pcXyz = pcReader.readXyzFromXyziBin("0000000000.bin");
 
   pcl::PolygonMeshPtr mesh = nullptr;
-  std:vector<int> partID, pointStates;
+  std::vector<int> partID, pointStates;
   pcReader.generateMeshFromXyz(pcXyz, mesh, partID, pointStates);
 
   debug_print("points: %d", pc->points.size());
@@ -43,7 +43,7 @@ int main() {
 
   Visualizer pcVisualizer;
   pcVisualizer.initViewerXYZ();
-  pcVisualizer.setViewer(*mesh);
+  pcVisualizer.setViewer(mesh);
   pcVisualizer.show(1000);
 }
 
