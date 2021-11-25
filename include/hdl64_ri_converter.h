@@ -22,7 +22,7 @@ class HDL64RIConverter
     PclPcXYZ  reconstructPcFromRi      (cv::Mat *ri);
     PclPcXYZI reconstructPcFromRiWithI (cv::Mat *ri);
 
-    void calcRiQuantError(PclPcXYZ pc, cv::Mat *ri);
+    float calcRiQuantError(PclPcXYZ pc, cv::Mat *ri);
     void calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi);
 
     float calcNearestDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt);

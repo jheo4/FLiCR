@@ -28,6 +28,7 @@ include(cmake/opencv.cmake)
 include(cmake/opengl.cmake)
 include(cmake/ffmpeg.cmake)
 include(cmake/pcl.cmake)
+include(cmake/spdlog.cmake)
 
 message(STATUS "[PCC COMPILE INFO]")
 

@@ -7,7 +7,7 @@ Encoder::Encoder()
 }
 
 
-void Encoder::init(std::string codec, int width, int height, int br, int fps)
+void Encoder::init(std::string codec, int width, int height, int br, int fps, int qp, int crf)
 {
   enc = avcodec_find_encoder_by_name(codec.c_str());
   if(!enc) {
@@ -26,14 +26,15 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
   encCtx->max_b_frames = 0;
   encCtx->gop_size  = 12;
 
+  /* H264 ENC Settings */
   if (strcmp(encCtx->codec->name, "libx264") == 0)
   {
     debug_print("libx264 Setting");
     av_opt_set(encCtx->priv_data, "preset", "fast", 0);
     av_opt_set(encCtx->priv_data, "tune", "zerolatency", 0);
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
-    //av_opt_set_int(encCtx->priv_data, "crf", 0, AV_OPT_SEARCH_CHILDREN);
-    av_opt_set(encCtx->priv_data, "qp", "0", 0);
+    if(crf > -1) av_opt_set(encCtx->priv_data, "crf", std::to_string(crf).c_str(), 0);
+    if( qp > -1) av_opt_set(encCtx->priv_data, "qp", std::to_string(qp).c_str(), 0);
   }
   if (strcmp(encCtx->codec->name, "h264_nvenc") == 0 ||
       strcmp(encCtx->codec->name, "nvenc_h264") == 0 )
@@ -42,15 +43,40 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
     av_opt_set(encCtx->priv_data, "preset", "fast", 0);
     av_opt_set(encCtx->priv_data, "delay", 0, 0);
     av_opt_set(encCtx->priv_data, "vsink", "0", 0);
-    av_opt_set(encCtx->priv_data, "qp", "0", 0);
+    if(crf > -1) av_opt_set(encCtx->priv_data, "crf", std::to_string(crf).c_str(), 0);
+    if( qp > -1) av_opt_set(encCtx->priv_data, "qp", std::to_string(qp).c_str(), 0);
     //av_opt_set(encCtx->priv_data, "zerolatency", "true", 0);
     //av_opt_set(encCtx->priv_data, "2pass", "true", 0);
     //av_opt_set_int(encCtx->priv_data, "level", 51, AV_OPT_SEARCH_CHILDREN);
   }
+
+  /* H265 ENC Settings */
+  if (strcmp(encCtx->codec->name, "libx265") == 0)
+  {
+    debug_print("libx265 Setting");
+    av_opt_set(encCtx->priv_data, "preset", "fast", 0);
+    av_opt_set(encCtx->priv_data, "tune", "zerolatency", 0);
+    av_opt_set(encCtx->priv_data, "vsink", "0", 0);
+    if(crf > -1) av_opt_set(encCtx->priv_data, "crf", std::to_string(crf).c_str(), 0);
+    if( qp > -1) av_opt_set(encCtx->priv_data, "qp", std::to_string(qp).c_str(), 0);
+  }
+  if (strcmp(encCtx->codec->name, "hevc_nvenc") == 0 ||
+      strcmp(encCtx->codec->name, "nvenc_hevc") == 0 )
+  {
+    debug_print("h265_nvenc Setting");
+    av_opt_set(encCtx->priv_data, "preset", "fast", 0);
+    av_opt_set(encCtx->priv_data, "delay", 0, 0);
+    av_opt_set(encCtx->priv_data, "vsink", "0", 0);
+    encCtx->flags |= AV_CODEC_FLAG_QSCALE;
+    encCtx->global_quality = FF_QP2LAMBDA * qp;
+  }
+
+  /* MJPEG Settings */
   if (strcmp(encCtx->codec->name, "mjpeg") == 0) {
     debug_print("mjpeg Setting");
     encCtx->pix_fmt = AV_PIX_FMT_YUVJ420P;
-    av_opt_set(encCtx->priv_data, "qscale", "2", 0);
+    encCtx->flags |= AV_CODEC_FLAG_QSCALE;
+    encCtx->global_quality = FF_QP2LAMBDA * qp;
   }
 
   int ret = avcodec_open2(encCtx, enc, NULL);
@@ -63,6 +89,9 @@ void Encoder::init(std::string codec, int width, int height, int br, int fps)
   encFrame->width = encCtx->width;
   encFrame->height = encCtx->height;
   encFrame->format = encCtx->pix_fmt;
+  if (strcmp(encCtx->codec->name, "mjpeg") == 0) {
+    encFrame->quality = encCtx->global_quality;
+  }
 
   av_image_fill_arrays(encFrame->data, encFrame->linesize, NULL, static_cast<AVPixelFormat>(encFrame->format),
                        encFrame->width, encFrame->height, 1);

@@ -1,10 +1,13 @@
 #include <bits/stdc++.h>
 #include <yaml-cpp/yaml.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 #include "./include/types.h"
 #include "./include/defs.h"
 #include "./include/utils.h"
 #include "./include/visualizer.h"
+#include "./include/metric.h"
 
 #include "./include/hdl64_pc_reader.h"
 #include "./include/oxts_reader.h"

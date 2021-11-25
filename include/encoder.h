@@ -23,7 +23,7 @@ class Encoder
 
   public:
     Encoder();
-    void init(std::string codec, int width, int height, int br, int fps);
+    void init(std::string codec, int width, int height, int br, int fps, int qp, int crf);
     cv::Mat rgb2yuv(cv::Mat &inFrame);
     cv::Mat gray2yuv(cv::Mat &inFrame);
     void encodeYUV(cv::Mat &inFrame, AVPacket &outPkt);

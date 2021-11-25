@@ -7,9 +7,10 @@ PcReader::PcReader()
 
 PclPcXYZ PcReader::readXyzBin(std::string fileName)
 {
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
-
   FILE* fp = fopen(fileName.c_str(), "rb");
+  if(fp == nullptr) return nullptr;
+
+  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -40,9 +41,10 @@ PclPcXYZ PcReader::readXyzBin(std::string fileName)
 
 PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
 {
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
-
   FILE* fp = fopen(fileName.c_str(), "rb");
+  if(fp == nullptr) return nullptr;
+
+  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -57,7 +59,7 @@ PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
     it = readBuf+3;
 
     readCount = fread(readBuf, sizeof(float), int(readBufSize/4), fp);
-    debug_print("ReadCount: %d", readCount);
+    //debug_print("ReadCount: %d", readCount/4);
     for(int i = 0; i < int(readCount/4); i++)
     {
       PclXYZ p;
@@ -77,13 +79,12 @@ PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
 }
 
 
-
-
 PclPcXYZI PcReader::readXyziBin(std::string fileName)
 {
-  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
-
   FILE* fp = fopen(fileName.c_str(), "rb");
+  if(fp == nullptr) return nullptr;
+
+  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -98,7 +99,7 @@ PclPcXYZI PcReader::readXyziBin(std::string fileName)
     it = readBuf+3;
 
     readCount = fread(readBuf, sizeof(float), int(readBufSize/4), fp);
-    debug_print("ReadCount: %d", readCount);
+    //debug_print("ReadCount: %d", readCount);
     for(int i = 0; i < int(readCount/4); i++)
     {
       PclXYZI p;
@@ -116,6 +117,47 @@ PclPcXYZI PcReader::readXyziBin(std::string fileName)
 	fclose(fp);
 
   return pc;
+}
+
+
+bool PcReader::readXyzInt(std::string fileName, PclPcXYZ &pc, std::vector<float> &intensity)
+{
+  FILE* fp = fopen(fileName.c_str(), "rb");
+  if(fp == nullptr) return false;
+
+  pc = PclPcXYZ(new pcl::PointCloud<PclXYZ>);
+
+  uint32_t readBufSize = 4800000;
+  float *readBuf = (float*)malloc(readBufSize);
+  uint32_t readCount;
+  float *x, *y, *z, *it;
+
+  while(feof(fp) == 0)
+  {
+    x  = readBuf+0;
+    y  = readBuf+1;
+    z  = readBuf+2;
+    it = readBuf+3;
+
+    readCount = fread(readBuf, sizeof(float), int(readBufSize/4), fp);
+    for(int i = 0; i < int(readCount/4); i++)
+    {
+      PclXYZ p;
+      p.x         = std::move(*x);
+      p.y         = std::move(*y);
+      p.z         = std::move(*z);
+      float itVal = std::move(*it);
+
+      pc->points.push_back(p);
+      intensity.push_back(itVal);
+      x+=4; y+=4; z+=4; it+=4;
+    }
+  }
+
+  free(readBuf);
+	fclose(fp);
+
+  return true;
 }
 
 

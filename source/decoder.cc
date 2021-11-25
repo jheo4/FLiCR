@@ -33,11 +33,14 @@ void Decoder::init(std::string codec, int width, int height)
   }
 
   AVPixelFormat fmt;
-  if (strcmp(codec.c_str(), "h264") == 0 ||
-      strcmp(codec.c_str(), "h264_cuvid")) {
+  if (strcmp(codec.c_str(), "h264") == 0      ||
+      strcmp(codec.c_str(), "h264_cuvid") ==0
+     )
+  {
     fmt = AV_PIX_FMT_YUV420P;
   }
-  if (strcmp(codec.c_str(), "mjpeg") == 0) {
+  if (strcmp(codec.c_str(), "mjpeg") == 0)
+  {
     fmt = AV_PIX_FMT_YUVJ420P;
   }
 

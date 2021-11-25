@@ -20,6 +20,8 @@ class PcReader
     PclPcXYZ  readXyzFromXyziBin (std::string fileName);
     PclPcXYZI readXyziBin(std::string fileName);
 
+    bool readXyzInt(std::string fileName, PclPcXYZ &pc, std::vector<float> &intensity);
+
     PclPcXYZ  readXyzPcd (std::string fileName);
     PclPcXYZI readXyziPcd(std::string fileName);
 

@@ -46,7 +46,7 @@ cv::Mat* HDL64RIConverter::convertPc2Ri(PclPcXYZ pc)
     rhoSum += rho;
   }
 
-  debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
+  //debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
 
   return ri;
 }
@@ -86,8 +86,8 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithI(PclPcXYZI pc)
     iSum += p.intensity;
   }
 
-  debug_print("avg (xyz): %f, %f, %f, rho(%f), intensity(%f)",
-              xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size(), iSum/pc->size());
+  //debug_print("avg (xyz): %f, %f, %f, rho(%f), intensity(%f)",
+  //            xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size(), iSum/pc->size());
 
   return ri;
 }
@@ -110,7 +110,7 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithXYZ(PclPcXYZ pc)
     int rowIdx = std::min(ri->rows-1, std::max(0, (int)(theta+thetaOffset)));
     int colIdx = std::min(ri->cols-1, std::max(0, (int)(pi+piOffset)));
 
-    debug_print("pi(%f), theta(%f): %d %d", pi, theta, colIdx, rowIdx);
+    //debug_print("pi(%f), theta(%f): %d %d", pi, theta, colIdx, rowIdx);
     ri->at<cv::Vec4f>(rowIdx, colIdx) = cv::Vec4f(rho, x, y, z);
   }
   return ri;
@@ -151,7 +151,7 @@ PclPcXYZ HDL64RIConverter::reconstructPcFromRi(cv::Mat *ri)
     }
   }
 
-  debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
+  //debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
 
   pc->width = pc->size();
   pc->height = 1;
@@ -219,20 +219,24 @@ void HDL64RIConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat
 }
 
 
-void HDL64RIConverter::calcRiQuantError(PclPcXYZ pc, cv::Mat *ri)
+float HDL64RIConverter::calcRiQuantError(PclPcXYZ pc, cv::Mat *ri)
 {
   int riElem = cv::countNonZero(*ri);
   int pcElem = pc->size();
   int error = (pcElem > riElem) ? pcElem - riElem : riElem - pcElem;
 
   PclPcXYZ reconstructedPC = reconstructPcFromRi(ri);
+  /*
   printf("========= calcRiQuantError =======\n");
   printf("\tOrig Points (%d), Ri Points (%d), absdiff (%d, %f%%)\n", pcElem, riElem, error, (double)error/pcElem*100);
 
   printf("\tOrig Points (%d), Points of PC from Ri (%d)\n", pcElem, reconstructedPC->size());
   printf("==================================\n");
+  */
 
+  float samplingError = (float)(pcElem - reconstructedPC->size())/(float)pcElem;
   reconstructedPC->clear();
+  return samplingError;
 }
 
 
@@ -270,14 +274,20 @@ float HDL64RIConverter::calcPcAvgDistance(PclPcXYZ pc1, PclPcXYZ pc2, float thre
   kdTree.setInputCloud(pc1);
 
   auto sum = std::accumulate(pc2->begin(), pc2->end(), 0.0f,
-                             [&](float currentSum, const pcl::PointXYZ& pt){
+                             [&](float currentSum, const pcl::PointXYZ& pt)
+                             {
                                const auto dist = calcNearestDistance(kdTree, pt);
-                               if(dist < thresh) return currentSum + dist;
-                               else {
-                                outliers++;
-                                return currentSum;
+                               if(dist < thresh)
+                               {
+                                 return currentSum + dist;
                                }
-                             });
+                               else
+                               {
+                                 outliers++;
+                                 return currentSum;
+                               }
+                              }
+                            );
 
   return sum / (pc2->size() - outliers);
 }
@@ -310,7 +320,7 @@ void HDL64RIConverter::normalizeRi(cv::Mat *origRi, cv::Mat *normRi, double *min
   cv::Mat temp;
   cv::normalize(*origRi, *normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
-  debug_print("min/max: %f %f", *minRho, *maxRho);
+  //debug_print("min/max: %f %f", *minRho, *maxRho);
 }
 
 
@@ -330,7 +340,7 @@ void HDL64RIConverter::normalizeRiWithI(cv::Mat *origRiWithI, cv::Mat *normRiWit
   cv::split(*origRiWithI, riChannels);
   cv::minMaxLoc(riChannels[0], &minRho, maxRho, &minP, &maxP);
   cv::minMaxLoc(riChannels[1], &minInt, maxInt, &minP, &maxP);
-  debug_print("rho/intensity range: %f~%f / %f~%f", minRho, *maxRho, minInt, *maxInt);
+  //debug_print("rho/intensity range: %f~%f / %f~%f", minRho, *maxRho, minInt, *maxInt);
 
   cv::Mat normalizedChannels[2];
   cv::normalize(riChannels[0], normalizedChannels[0], 0, 255, cv::NORM_MINMAX, CV_8UC1);
