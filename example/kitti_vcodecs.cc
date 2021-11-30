@@ -120,7 +120,7 @@ int main() {
 
       // metric logging
       float samplingError = riConverter.calcRiQuantError(pcXyz, ri);
-      float PSNR = calcPSNR(pcXyz, decXyz, riMax);
+      float PSNR = calcPSNR(pcXyz, decXyz, 80);
       float riPSNR = getImgPSNR(*ri, decRi, riMax);
       float riMSSIM1 = getImgMSSIM(nRi, decNri);
       float riMSSIM2 = getImgMSSIM(*ri, decRi);

@@ -101,6 +101,11 @@ public:
 
     //reset camera
     viz.resetCameraViewpoint("cloud");
+    viz.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
+    viz.addCoordinateSystem(1.0);
+    viz.initCameraParameters();
+    viz.setCameraPosition(0, 60, 20,  0, 0, 0,  0, 0, 1);
+
 
     //run main loop
     run();
