@@ -22,7 +22,8 @@ cv::Mat* HDL64RIConverter::convertPc2Ri(PclPcXYZ pc)
   cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
 
   #pragma omp parallel for
-  for(int i = 0; i < (int)pc->points.size(); i++) {
+  for(int i = 0; i < (int)pc->points.size(); i++)
+  {
     float x = pc->points[i].x;
     float y = pc->points[i].y;
     float z = pc->points[i].z;
@@ -55,7 +56,8 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithI(PclPcXYZI pc)
    cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC2, cv::Scalar(0.f));
 
   #pragma omp parallel for
-  for(int i = 0; i < (int)pc->points.size(); i++) {
+  for(int i = 0; i < (int)pc->points.size(); i++)
+  {
     float x = pc->points[i].x;
     float y = pc->points[i].y;
     float z = pc->points[i].z;
@@ -93,7 +95,8 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithXYZ(PclPcXYZ pc)
   cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC4, cv::Scalar(0.f, 0.f, 0.f, 0.f));
 
   #pragma omp parallel for
-  for(int i = 0; i < (int)pc->points.size(); i++) {
+  for(int i = 0; i < (int)pc->points.size(); i++)
+  {
     float x = pc->points[i].x;
     float y = pc->points[i].y;
     float z = pc->points[i].z;
@@ -110,6 +113,7 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithXYZ(PclPcXYZ pc)
     //debug_print("pi(%f), theta(%f): %d %d", pi, theta, colIdx, rowIdx);
     ri->at<cv::Vec4f>(rowIdx, colIdx) = cv::Vec4f(rho, x, y, z);
   }
+
   return ri;
 }
 
@@ -119,27 +123,37 @@ PclPcXYZ HDL64RIConverter::reconstructPcFromRi(cv::Mat *ri)
   PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
   pc->reserve(150000);
 
-  for(int y = 0; y < ri->rows; y++) {
-    for(int x = 0; x < ri->cols; x++) {
-      float rho = ri->at<float>(y, x);
-      if(rho > 2 && rho < 80.2) { // rho is between 2~81
-        float nTheta = (y * thetaPrecision);
-        float nPi = (x * piPrecision);
+  #pragma omp parallel
+  {
+    pcl::PointCloud<PclXYZ> privatePc;
+    privatePc.reserve(15000);
 
-        float theta = nTheta - HDL64_VERTICAL_DEGREE_OFFSET;
-        float pi    = nPi    - HDL64_HORIZONTAL_DEGREE_OFFSET;
+    #pragma omp for nowait
+    for(int y = 0; y < ri->rows; y++) {
+      for(int x = 0; x < ri->cols; x++) {
+        float rho = ri->at<float>(y, x);
+        if(rho > 2 && rho < 80.2) { // rho is between 2~81
+          float nTheta = (y * thetaPrecision);
+          float nPi = (x * piPrecision);
 
-        float rTheta = theta * PI/180.0f;
-        float rPi    = pi    * PI/180.0f;
+          float theta = nTheta - HDL64_VERTICAL_DEGREE_OFFSET;
+          float pi    = nPi    - HDL64_HORIZONTAL_DEGREE_OFFSET;
 
-        PclXYZ p;
+          float rTheta = theta * PI/180.0f;
+          float rPi    = pi    * PI/180.0f;
 
-        p.x = rho * std::sin(rTheta) * std::cos(rPi);
-        p.y = rho * std::sin(rTheta) * std::sin(rPi);
-        p.z = rho * std::cos(rTheta);
-        pc->push_back(p);
+          PclXYZ p;
+
+          p.x = rho * std::sin(rTheta) * std::cos(rPi);
+          p.y = rho * std::sin(rTheta) * std::sin(rPi);
+          p.z = rho * std::cos(rTheta);
+          privatePc.push_back(p);
+        }
       }
     }
+
+    #pragma omp critical
+    pc->insert(pc->end(), privatePc.begin(), privatePc.end());
   }
 
   pc->width = pc->size();
