@@ -25,7 +25,7 @@ int main() {
   std::shared_ptr<spdlog::logger> decLogger    = spdlog::basic_logger_st("decLogger", "logs/"+dataCategory+"/dec.log");
   std::shared_ptr<spdlog::logger> metricLogger = spdlog::basic_logger_st("metLogger", "logs/"+dataCategory+"/metric.log");
 
-  metricLogger->info("\tSampling Error\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
+  metricLogger->info("\tSamplingError\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
 
 
   std::ostringstream os;

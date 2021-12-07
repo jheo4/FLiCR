@@ -32,7 +32,7 @@ float getMSE(PclPcXYZ pc1, PclPcXYZ pc2, float distThresh = std::numeric_limits<
                                     float dist = getDistance(kdTree, pt);
                                     if(dist < distThresh)
                                     {
-                                      return currentSum + (float)pow(dist, 2);
+                                      return currentSum + dist;
                                     }
                                     else
                                     {

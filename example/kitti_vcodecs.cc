@@ -34,7 +34,7 @@ int main() {
 
   encLogger->info("Encoder Info: {}, br {}, fps {}, qp {}, crf {}", encName, br, fps, qp, crf);
   decLogger->info("Decoder Info: {}", decName);
-  metricLogger->info("\tSampling Error\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
+  metricLogger->info("\tSamplingError\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
 
 
   std::ostringstream os;
