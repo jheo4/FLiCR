@@ -58,7 +58,14 @@ int main() {
   else
   {
     struct dirent *ent;
-    while(ent = readdir(dir)) numScans++;
+    while(ent = readdir(dir))
+    {
+      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
+      else
+      {
+        numScans++;
+      }
+    }
   }
   closedir(dir);
   debug_print("# of scans: %d", numScans);

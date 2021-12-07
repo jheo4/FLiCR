@@ -32,7 +32,7 @@ d435i_depth_image_topic: "/device_0/sensor_0/Depth_0/image/data" # sensor_msgs/I
 
 lidar_data: "/home/jin/mnt/Data/kitti/City/2011_09_26_drive_0051_sync/2011_09_26/2011_09_26_drive_0051_sync/velodyne_points/data"
 data_cat  : "kitti_city"
-
+ply_path  : "/home/jin/mnt/Data/kitti/City/2011_09_26_drive_0051_sync/2011_09_26/2011_09_26_drive_0051_sync/velodyne_points/ply"
 # lidar_data: "/home/jin/mnt/Data/kitti/Campus/2011_09_28_drive_0038_sync/2011_09_28/2011_09_28_drive_0038_sync/velodyne_points/data"
 # data_cat  : "kitti_campus"
 
