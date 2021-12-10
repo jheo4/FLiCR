@@ -57,6 +57,24 @@ float calcPSNR(PclPcXYZ pc1, PclPcXYZ pc2, float pcMax)
 }
 
 
+float calcCD(PclPcXYZ pc1, PclPcXYZ pc2)
+{
+  float pc12 = getMSE(pc1, pc2);
+  float pc21 = getMSE(pc2, pc1);
+
+  return pc12+pc21;
+}
+
+
+float calcSamplingError(PclPcXYZ pc1, PclPcXYZ pc2)
+{
+  int pc1Size = pc1->size();
+  int pc2Size = pc2->size();
+
+  return (float)(pc1Size - pc2Size) / (float)pc1Size;
+}
+
+
 double getImgPSNR(const cv::Mat& ri1, const cv::Mat& ri2, float riMax)
 {
   cv::Mat s1;

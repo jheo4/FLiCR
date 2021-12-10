@@ -22,47 +22,81 @@ int main() {
   std::cout << "3D PCC config.yaml: " << configYaml << std::endl;
 
   YAML::Node config         = YAML::LoadFile(configYaml);
-  std::string kittiBagFile  = config["kitti_bag_file"].as<std::string>();
-  std::string kittiVelodyne = config["kitti_velodyne_topic"].as<std::string>();
+  std::string lidarDataPath = config["lidar_data"].as<std::string>();
+  std::string dataCategory  = config["data_cat"].as<std::string>();
 
-  /* Set classes */
-  HDL64PCReader hdl64PcReader(kittiBagFile, kittiVelodyne);
-  //pcl::io::compression_Profiles_e xyzProfile = pcl::io::HIGH_RES_OFFLINE_COMPRESSION_WITHOUT_COLOR;
+  std::ostringstream os;
+  PcReader pcReader;
+
   pcl::io::compression_Profiles_e xyzProfile = pcl::io::MED_RES_OFFLINE_COMPRESSION_WITHOUT_COLOR;
   pcl::io::OctreePointCloudCompression<pcl::PointXYZ> *xyzEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ>(xyzProfile);
   pcl::io::OctreePointCloudCompression<pcl::PointXYZ> *xyzDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ>();
 
-  PclPcXYZ pc1, pcReconstructed(new pcl::PointCloud<PclXYZ>());
-  pc1 = hdl64PcReader.getNextPC();
+  std::shared_ptr<spdlog::logger> metricLogger = spdlog::basic_logger_st("metLogger", "logs/"+dataCategory+"/pcl_metric.log");
+  metricLogger->info("\tSamplingError\tPSNR\tCD\tencTime\tdecTime\tcompSize");
 
-  std::stringstream compressedData;
-
-  st = getTsNow();
-  xyzEncoder->encodePointCloud(pc1, compressedData);
-  et = getTsNow();
-
-  debug_print("encoding time: %f ms", et - st);
-
-  st = getTsNow();
-  xyzDecoder->decodePointCloud(compressedData, pcReconstructed);
-  et = getTsNow();
-  debug_print("decoding time: %f ms", et - st);
-
-  compressedData.seekg(0, ios::end);
-  int size = compressedData.tellg();
-  debug_print("compressed Size: %d", size);
-
-  float PSNR = calcPSNR(pc1, pcReconstructed, 80);
-  debug_print("PCL PSNR: %f", PSNR);
-
-  Visualizer visualizer;
-  visualizer.initViewerXYZ();
-
-  /* PC Visualization */
-  visualizer.setViewer(pcReconstructed);
-  for(int i = 0; i < 1; i++) {
-    visualizer.show(5000);
+  int numScans = 0;
+  DIR *dir = opendir(lidarDataPath.c_str());
+  if(dir == NULL)
+  {
+    debug_print("invalide lidarDataPath in config.yaml");
+    return 0;
   }
+  else
+  {
+    struct dirent *ent;
+    while(ent = readdir(dir))
+    {
+      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
+      else
+      {
+        numScans++;
+      }
+    }
+  }
+  closedir(dir);
+  debug_print("# of scans: %d", numScans);
+  numScans = 100;
+
+  for(int idx = 0; idx < numScans; idx++)
+  {
+    float encTime, decTime;
+    int compSize;
+
+    os << std::setw(10) << std::setfill('0') << idx;
+    std::string fn = lidarDataPath + "/" + os.str() + ".bin";
+    os.str(""); os.clear();
+
+    PclPcXYZ pcXyz, pcReconstructed(new pcl::PointCloud<PclXYZ>());
+    std::vector<float> intensity;
+    pcXyz = pcReader.readXyzFromXyziBin(fn);
+
+    std::stringstream compressedData;
+    st = getTsNow();
+    xyzEncoder->encodePointCloud(pcXyz, compressedData);
+    et = getTsNow();
+    encTime = et-st;
+
+    st = getTsNow();
+    xyzDecoder->decodePointCloud(compressedData, pcReconstructed);
+    et = getTsNow();
+    decTime = et-st;
+
+    compressedData.seekg(0, ios::end);
+    compSize = compressedData.tellg();
+
+    float PSNR = calcPSNR(pcXyz, pcReconstructed, 80);
+    float CD   = calcCD(pcXyz, pcReconstructed);
+    float SE   = calcSamplingError(pcXyz, pcReconstructed);
+
+    metricLogger->info("\t{}\t{}\t{}\t{}\t{}\t{}", SE, PSNR, CD, encTime, decTime, compSize);
+
+    pcXyz->clear();
+    pcReconstructed->clear();
+
+    printProgress((float)idx/(float)numScans);
+  }
+  printProgress(1);
 
   return 0;
 }

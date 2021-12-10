@@ -6,60 +6,135 @@ using namespace std;
 int main() {
   double st, et;
 
+  std::string pccHome = getenv("PCC_HOME");
+  if(pccHome.empty())
+  {
+    std::cout << "set PCC_HOME" << std::endl;
+    return 0;
+  }
+  std::string configYaml = pccHome + "/config.yaml";
+
+  YAML::Node config = YAML::LoadFile(configYaml);
+  std::string lidarDataPath = config["lidar_data"].as<std::string>();
+  std::string metricData    = config["metric_data"].as<std::string>();
+
+  std::ostringstream os;
   PcReader pcReader;
-  HDL64RIConverter hdl64RiConverter;
 
-  PcWriter pcWriter;
+  int numScans = 0;
+  DIR *dir = opendir(lidarDataPath.c_str());
+  if(dir == NULL)
+  {
+    debug_print("invalide lidarDataPath in config.yaml");
+    return 0;
+  }
+  else
+  {
+    struct dirent *ent;
+    while(ent = readdir(dir))
+    {
+      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
+      else
+      {
+        numScans++;
+      }
+    }
+  }
+  closedir(dir);
+  numScans = 30;
+  debug_print("# of scans: %d", numScans);
 
-  PclPcXYZI pc;
-  PclPcXYZ  pcXyz, tmcPcXyz;
-  pcl::PolygonMesh mesh;
+  double gdracoCl1PSNR {0}, gdracoCl10PSNR {0}, grt2048PSNR {0}, grt4096PSNR {0}, gtmc1cmPSNR {0}, gtmc10cmPSNR {0};
+  double gdracoCl1CD {0}, gdracoCl10CD {0}, grt2048CD {0}, grt4096CD {0}, gtmc1cmCD {0}, gtmc10cmCD {0};
+  double gdracoCl1SE {0}, gdracoCl10SE {0}, grt2048SE {0}, grt4096SE {0}, gtmc1cmSE {0}, gtmc10cmSE {0};
 
-  st = getTsNow();
-  pc = pcReader.readXyziBin("/home/mnt/Data/kitti/0000000000.bin");
-  pcXyz    = pcReader.readXyzFromXyziBin("/home/mnt/Data/kitti/0000000000.bin");
-  tmcPcXyz = pcReader.readXyzPly("/home/mnt/Data/kitti/tmc3_decomp_pc.ply");
+  for(int idx = 0; idx < numScans; idx++)
+  {
+    os << std::setw(10) << std::setfill('0') << idx;
+    std::string fn = lidarDataPath + "/" + os.str() + ".bin";
+    std::string dracoCl1Fn  = metricData + "/draco/xyz/cl1/dec_xyz_" + os.str() + ".ply";
+    std::string dracoCl10Fn = metricData + "/draco/xyz/cl10/dec_xyz_" + os.str() + ".ply";
+    std::string rt2048Fn    = metricData + "/realtime/2048/" + os.str() + ".bin";
+    std::string rt4096Fn    = metricData + "/realtime/4096/" + os.str() + ".bin";
+    std::string tmc1cmFn    = metricData + "/tmc13/xyz/1cm/dec_xyz_" + os.str() + ".ply";
+    std::string tmc10cmFn   = metricData + "/tmc13/xyz/10cm/dec_xyz_" + os.str() + ".ply";
+    os.str(""); os.clear();
 
-  debug_print("points: %d", pc->points.size());
-  et = getTsNow();
-  debug_print("readT: %f ms", et-st);
+    PclPcXYZ original  = pcReader.readXyzFromXyziBin(fn);
+    PclPcXYZ dracoCl1  = pcReader.readXyzPly(dracoCl1Fn);
+    PclPcXYZ dracoCl10 = pcReader.readXyzPly(dracoCl10Fn);
+    PclPcXYZ rt2048    = pcReader.readXyzFromXyziBin(rt2048Fn);
+    PclPcXYZ rt4096    = pcReader.readXyzFromXyziBin(rt4096Fn);
+    PclPcXYZ tmc1cm    = pcReader.readXyzPly(tmc1cmFn);
+    PclPcXYZ tmc10cm   = pcReader.readXyzPly(tmc10cmFn);
 
-  //pcl::io::loadPLYFile("/home/mnt/Data/kitti/draco_decomp_mesh.ply", mesh);
-  //pcl::PointCloud<PclXYZ> meshPc;
-  //pcl::fromPCLPointCloud2(mesh.cloud, meshPc);
-  PclPcXYZ meshPc = pcReader.readXyzPly("/home/mnt/Data/kitti/draco_decomp_mesh.ply");
+    float dracoCl1PSNR  = calcPSNR(original, dracoCl1, 80);
+    float dracoCl10PSNR = calcPSNR(original, dracoCl10, 80);
+    float rt2048PSNR    = calcPSNR(original, rt2048, 80);
+    float rt4096PSNR    = calcPSNR(original, rt4096, 80);
+    float tmc1cmPSNR    = calcPSNR(original, tmc1cm, 80);
+    float tmc10cmPSNR   = calcPSNR(original, tmc10cm, 80);
 
+    float dracoCl1CD    = calcCD(original, dracoCl1);
+    float dracoCl10CD   = calcCD(original, dracoCl10);
+    float rt2048CD      = calcCD(original, rt2048);
+    float rt4096CD      = calcCD(original, rt4096);
+    float tmc1cmCD      = calcCD(original, tmc1cm);
+    float tmc10cmCD     = calcCD(original, tmc10cm);
 
-  PclMesh t(&mesh);
-  //PclPcXYZ tt = static_cast<PclPcXYZ>(&meshPc);
-  float PSNR = calcPSNR(pcXyz, meshPc, 80);
-  debug_print("Draco PSNR: %f", PSNR);
+    float dracoCl1SE    = calcSamplingError(original, dracoCl1);
+    float dracoCl10SE   = calcSamplingError(original, dracoCl10);
+    float rt2048SE      = calcSamplingError(original, rt2048);
+    float rt4096SE      = calcSamplingError(original, rt4096);
+    float tmc1cmSE      = calcSamplingError(original, tmc1cm);
+    float tmc10cmSE     = calcSamplingError(original, tmc10cm);
 
-  int diff = pcXyz->size() - meshPc->size();
-  diff = abs(diff);
-  float pointError = (float)diff/pcXyz->size();
-  debug_print("Draco point errors: %f, diffPoints %d", pointError, diff);
+    gdracoCl1PSNR  += dracoCl1PSNR;
+    gdracoCl10PSNR += dracoCl10PSNR;
+    grt2048PSNR    += rt2048PSNR;
+    grt4096PSNR    += rt4096PSNR;
+    gtmc1cmPSNR    += tmc1cmPSNR;
+    gtmc10cmPSNR   += tmc10cmPSNR;
 
+    gdracoCl1CD    += dracoCl1CD;
+    gdracoCl10CD   += dracoCl10CD;
+    grt2048CD      += rt2048CD;
+    grt4096CD      += rt4096CD;
+    gtmc1cmCD      += tmc1cmCD;
+    gtmc10cmCD     += tmc10cmCD;
 
-  PSNR = calcPSNR(pcXyz, tmcPcXyz, 80);
-  debug_print("TMC3 PSNR: %f", PSNR);
-  diff = pcXyz->size() - tmcPcXyz->size();
-  diff = abs(diff);
-  pointError = (float)diff/pcXyz->size();
-  debug_print("TMC3 point errors: %f, diffPoints %d", pointError, diff);
+    gdracoCl1SE    += dracoCl1SE;
+    gdracoCl10SE   += dracoCl10SE;
+    grt2048SE      += rt2048SE;
+    grt4096SE      += rt4096SE;
+    gtmc1cmSE      += tmc1cmSE;
+    gtmc10cmSE     += tmc10cmSE;
+  }
 
-  PclPcXYZ realSpatioXyz = pcReader.readXyzFromXyziBin("/home/mnt/Data/kitti/realtime_spatio_original.bin");
-  PclPcXYZ realSpatioDecomXyz = pcReader.readXyzFromXyziBin("/home/mnt/Data/kitti/realtime_spatio_decomp.bin");
-  PSNR = calcPSNR(realSpatioXyz, realSpatioDecomXyz, 80);
-  debug_print("Realtime-Spatio PSNR: %f", PSNR);
-  diff = realSpatioXyz->size() - realSpatioDecomXyz->size();
-  diff = abs(diff);
-  pointError = (float)diff/realSpatioXyz->size();
-  debug_print("Realtime-Spatio point errors: %f, diffPoints %d", pointError, diff);
+  gdracoCl1PSNR  /= numScans;
+  gdracoCl10PSNR /= numScans;
+  grt2048PSNR    /= numScans;
+  grt4096PSNR    /= numScans;
+  gtmc1cmPSNR    /= numScans;
+  gtmc10cmPSNR   /= numScans;
 
-  Visualizer pcVisualizer;
-  pcVisualizer.initViewerXYZ();
-  pcVisualizer.setViewer(realSpatioDecomXyz);
-  pcVisualizer.show(100000);
+  gdracoCl1CD    /= numScans;
+  gdracoCl10CD   /= numScans;
+  grt2048CD      /= numScans;
+  grt4096CD      /= numScans;
+  gtmc1cmCD      /= numScans;
+  gtmc10cmCD     /= numScans;
+
+  gdracoCl1SE    /= numScans;
+  gdracoCl10SE   /= numScans;
+  grt2048SE      /= numScans;
+  grt4096SE      /= numScans;
+  gtmc1cmSE      /= numScans;
+  gtmc10cmSE     /= numScans;
+
+  printf("      DracoCl1, DracoCl10, rt2048, rt4096, tmc1cm, tmc10cm\n");
+  printf("PSNR: %f, %f, %f, %f, %f, %f\n", gdracoCl1PSNR, gdracoCl10PSNR, grt2048PSNR, grt4096PSNR, gtmc1cmPSNR, gtmc10cmPSNR);
+  printf("CD:   %f, %f, %f, %f, %f, %f\n", gdracoCl1CD, gdracoCl10CD, grt2048CD, grt4096CD, gtmc1cmCD, gtmc10cmCD);
+  printf("SE:   %f, %f, %f, %f, %f, %f\n", gdracoCl1SE, gdracoCl10SE, grt2048SE, grt4096SE, gtmc1cmSE, gtmc10cmSE);
 }
 
