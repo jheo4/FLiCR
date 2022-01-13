@@ -15,7 +15,11 @@ class HDL64RIConverter
   int riRow, riCol;
 
   public:
-    HDL64RIConverter();
+    HDL64RIConverter(double thetaPrecision = HDL64_THETA_PRECISION,
+                     double piPrecision = HDL64_PI_PRECISION,
+                     double thetaOffset = HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
+                     double piOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET/HDL64_PI_PRECISION);
+
     cv::Mat*  convertPc2Ri             (PclPcXYZ pc);
     cv::Mat*  convertPc2RiWithI        (PclPcXYZI);
     cv::Mat*  convertPc2RiWithXYZ      (PclPcXYZ pc);

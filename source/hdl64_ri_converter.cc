@@ -3,16 +3,16 @@
 #include <defs.h>
 
 
-HDL64RIConverter::HDL64RIConverter()
+HDL64RIConverter::HDL64RIConverter(double thetaPrecision, double piPrecision, double thetaOffset, double piOffset)
 {
-  thetaPrecision = HDL64_THETA_PRECISION;
-  piPrecision = HDL64_PI_PRECISION;
+  this->thetaPrecision = thetaPrecision;
+  this->piPrecision    = piPrecision;
 
   riRow = HDL64_VERTICAL_DEGREE / thetaPrecision;
   riCol = HDL64_HORIZONTAL_DEGREE / piPrecision;
 
-  thetaOffset = HDL64_VERTICAL_DEGREE_OFFSET / thetaPrecision;
-  piOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET / piPrecision;
+  this->thetaOffset = thetaOffset;
+  this->piOffset    = piOffset;
 }
 
 

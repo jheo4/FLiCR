@@ -69,6 +69,7 @@ int main() {
   }
   closedir(dir);
   debug_print("# of scans: %d", numScans);
+  numScans = 100;
 
   for(int idx = 0; idx < numScans; idx++)
   {
