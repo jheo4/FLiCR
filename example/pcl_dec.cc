@@ -33,7 +33,11 @@ int main(int argc, char* argv[]) {
   inf >> encoded.rdbuf();
 
   pcl::io::OctreePointCloudCompression<pcl::PointXYZ> *xyzDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ>();
+
+  st = getTsNow();
   xyzDecoder->decodePointCloud(encoded, decoded);
+  et = getTsNow();
+  debug_print("exe: %f", et-st);
 
   pcWriter.writeBin(output, decoded);
   return 0;

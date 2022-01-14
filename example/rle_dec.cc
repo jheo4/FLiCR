@@ -43,15 +43,17 @@ int main(int argc, char* argv[]) {
   uint32_t encodedSize;
 
   encodedSize = fread(readBuf, sizeof(char), readBufSize, ifp);
-  debug_print("origSize: %d, encodedSize: %d", origSize, encodedSize);
 
   RunLengthCompressor rlec;
 
   std::vector<char> rleRes(readBuf, readBuf + encodedSize);
+  st = getTsNow();
   std::vector<char> rlDecoded = rlec.decode(rleRes, origSize);
+  et = getTsNow();
 
   // save file to bin
   fwrite(rlDecoded.data(), sizeof(char), rlDecoded.size(), ofp);
+  debug_print("origSize: %d, encodedSize: %d, exe: %f", origSize, encodedSize, et-st);
 
   fclose(origfp);
   fclose(ifp);

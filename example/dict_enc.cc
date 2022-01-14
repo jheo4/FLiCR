@@ -34,15 +34,17 @@ int main(int argc, char* argv[]) {
 
   readCount = fread(readBuf, sizeof(float), int(readBufSize/4), ifp);
   size = readCount * 4;
-  debug_print("# of pints: %d, total size: %d", readCount, size);
 
   BoostZip boostZip;
   std::vector<char> dictRes;
 
+  st = getTsNow();
   boostZip.deflateGzip((char*)readBuf, size, dictRes);
+  et = getTsNow();
 
   // save file to bin
   fwrite(dictRes.data(), sizeof(char), dictRes.size(), ofp);
+  debug_print("# of pints: %d, total size: %d, exe: %f", readCount, size, et-st);
 
   fclose(ifp);
   fclose(ofp);

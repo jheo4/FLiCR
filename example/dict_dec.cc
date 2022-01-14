@@ -32,17 +32,19 @@ int main(int argc, char* argv[]) {
   uint32_t encodedSize;
 
   encodedSize = fread(readBuf, sizeof(char), readBufSize, ifp);
-  debug_print("encodedSize: %d", encodedSize);
 
   BoostZip boostzip;
 
   std::vector<char> encoded(readBuf, readBuf + encodedSize);
   std::vector<char> decoded;
 
+  st = getTsNow();
   boostzip.inflateGzip(encoded, decoded);
+  et = getTsNow();
 
   // save file to bin
   fwrite(decoded.data(), sizeof(char), decoded.size(), ofp);
+  debug_print("encodedSize: %d, exe: %f", encodedSize, et-st);
 
   fclose(ifp);
   fclose(ofp);

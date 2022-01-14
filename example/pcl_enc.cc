@@ -29,7 +29,11 @@ int main(int argc, char* argv[]) {
   pcl::io::OctreePointCloudCompression<pcl::PointXYZ> *xyzEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ>(xyzProfile);
 
   std::stringstream encoded;
+
+  st = getTsNow();
   xyzEncoder->encodePointCloud(pcXyz, encoded);
+  et = getTsNow();
+  debug_print("exe: %f", et-st);
 
   outf << encoded.rdbuf();
 

@@ -34,13 +34,15 @@ int main(int argc, char* argv[]) {
 
   readCount = fread(readBuf, sizeof(float), int(readBufSize/4), ifp);
   size = readCount * 4;
-  debug_print("# of pints: %d, total size: %d", readCount, size);
 
   RunLengthCompressor rlec;
+  st = getTsNow();
   std::vector<char> rleRes = rlec.encode((char*)readBuf, size);
+  et = getTsNow();
 
   // save file to bin
   fwrite(rleRes.data(), sizeof(char), rleRes.size(), ofp);
+  debug_print("# of pints: %d, total size: %d, exe: %f", readCount, size, et-st);
 
   fclose(ifp);
   fclose(ofp);
