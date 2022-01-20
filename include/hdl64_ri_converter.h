@@ -21,10 +21,16 @@ class HDL64RIConverter
                      double piOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET/HDL64_PI_PRECISION);
 
     cv::Mat*  convertPc2Ri             (PclPcXYZ pc);
+    cv::Mat*  convertPc2RinonP         (PclPcXYZ pc);
     cv::Mat*  convertPc2RiWithI        (PclPcXYZI);
+    cv::Mat*  convertPc2RiWithInonP    (PclPcXYZI);
+
     cv::Mat*  convertPc2RiWithXYZ      (PclPcXYZ pc);
-    PclPcXYZ  reconstructPcFromRi      (cv::Mat *ri);
-    PclPcXYZI reconstructPcFromRiWithI (cv::Mat *ri);
+
+    PclPcXYZ  reconstructPcFromRi          (cv::Mat *ri);
+    PclPcXYZ  reconstructPcFromRinonP      (cv::Mat *ri);
+    PclPcXYZI reconstructPcFromRiWithI     (cv::Mat *ri);
+    PclPcXYZI reconstructPcFromRiWithInonP (cv::Mat *ri);
 
     float calcRiQuantError(PclPcXYZ pc, cv::Mat *ri);
     void calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi);
