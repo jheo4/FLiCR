@@ -10,11 +10,11 @@
 
 class HDL64RIConverter
 {
-  double thetaPrecision, piPrecision;
-  double thetaOffset,    piOffset;
-  int riRow, riCol;
-
   public:
+    int riRow, riCol;
+    double thetaPrecision, piPrecision;
+    double thetaOffset,    piOffset;
+
     HDL64RIConverter(double thetaPrecision = HDL64_THETA_PRECISION,
                      double piPrecision = HDL64_PI_PRECISION,
                      double thetaOffset = HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,

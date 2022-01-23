@@ -4,8 +4,8 @@ using namespace std;
 
 int main() {
   double st, et;
-  int riRow = (int)(HDL64_VERTICAL_DEGREE   / HDL64_THETA_PRECISION);
-  int riCol = (int)(HDL64_HORIZONTAL_DEGREE / HDL64_PI_PRECISION);
+  int riRow = 64;
+  int riCol = 4500;
 
   std::string pccHome = getenv("PCC_HOME");
   if(pccHome.empty())
@@ -34,12 +34,15 @@ int main() {
 
   encLogger->info("Encoder Info: {}, br {}, fps {}, qp {}, crf {}", encName, br, fps, qp, crf);
   decLogger->info("Decoder Info: {}", decName);
-  metricLogger->info("\tSamplingError\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
+  metricLogger->info("\tSE\tPSNR\tCD");
 
 
   std::ostringstream os;
   PcReader pcReader;
-  HDL64RIConverter riConverter;
+  HDL64RIConverter riConverter(HDL64_THETA_PRECISION, HDL64_PI_PRECISION_4500,
+                               HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
+                               HDL64_HORIZONTAL_DEGREE_OFFSET/HDL64_PI_PRECISION_4500);
+
   Encoder encoder;
   Decoder decoder;
   encoder.init(encName, riCol, riRow, br, fps, qp, crf);
@@ -129,11 +132,9 @@ int main() {
       // metric logging
       float samplingError = riConverter.calcRiQuantError(pcXyz, ri);
       float PSNR = calcPSNR(pcXyz, decXyz, 80);
-      float riPSNR = getImgPSNR(*ri, decRi, riMax);
-      float riMSSIM1 = getImgMSSIM(nRi, decNri);
-      float riMSSIM2 = getImgMSSIM(*ri, decRi);
+      float CD   = calcCD(pcXyz, decXyz);
 
-      metricLogger->info("\t{}\t{}\t{}\t{}\t{}", samplingError, PSNR, riPSNR, riMSSIM1, riMSSIM2);
+      metricLogger->info("\t{}\t{}\t{}", samplingError, PSNR, CD);
 
       visualizer.setViewer(decXyz);
       visualizer.show(1);
