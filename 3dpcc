@@ -8,6 +8,7 @@
 #include "./include/utils.h"
 #include "./include/visualizer.h"
 #include "./include/metric.h"
+#include "./include/pcl_utils.h"
 
 #include "./include/hdl64_pc_reader.h"
 #include "./include/oxts_reader.h"
