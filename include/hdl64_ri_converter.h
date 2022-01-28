@@ -24,6 +24,7 @@ class HDL64RIConverter
     cv::Mat*  convertPc2RinonP         (PclPcXYZ pc);
     cv::Mat*  convertPc2RiWithI        (PclPcXYZI);
     cv::Mat*  convertPc2RiWithInonP    (PclPcXYZI);
+    bool      convertPc2RiWithIm       (PclPcXYZI pc, cv::Mat &ri, cv::Mat &intMap);
 
     cv::Mat*  convertPc2RiWithXYZ      (PclPcXYZ pc);
 
@@ -31,6 +32,7 @@ class HDL64RIConverter
     PclPcXYZ  reconstructPcFromRinonP      (cv::Mat *ri);
     PclPcXYZI reconstructPcFromRiWithI     (cv::Mat *ri);
     PclPcXYZI reconstructPcFromRiWithInonP (cv::Mat *ri);
+    PclPcXYZI reconstructPcFromRiWithIm    (cv::Mat &ri, cv::Mat &intMap);
 
     float calcRiQuantError(PclPcXYZ pc, cv::Mat *ri);
     void calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi);

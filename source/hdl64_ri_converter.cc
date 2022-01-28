@@ -194,6 +194,42 @@ cv::Mat* HDL64RIConverter::convertPc2RiWithXYZ(PclPcXYZ pc)
 }
 
 
+
+bool HDL64RIConverter::convertPc2RiWithIm(PclPcXYZI pc, cv::Mat &ri, cv::Mat &intMap)
+{
+  ri = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  intMap = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+
+  for(auto p: pc->points) {
+    float x = p.x;
+    float y = p.y;
+    float z = p.z;
+
+    float rho    = std::sqrt(x*x + y*y + z*z);
+
+    // theta & pi in rad
+    float rTheta = std::acos(z/rho);
+    float rPi    = std::atan2(y, x);
+
+    // theta & pi in deg
+    float theta  = rTheta * 180.0f/PI;
+    float pi     = rPi * 180.0f/PI;
+
+    // normalized theta & pi in deg
+    float nTheta = theta + HDL64_VERTICAL_DEGREE_OFFSET;
+    float nPi    = pi + HDL64_HORIZONTAL_DEGREE_OFFSET;
+
+    int rowIdx = std::min(ri.rows-1, std::max(0, (int)(nTheta/thetaPrecision)));
+    int colIdx = std::min(ri.cols-1, std::max(0, (int)(nPi/piPrecision)));
+
+    ri.at<float>(rowIdx, colIdx) = rho;
+    intMap.at<float>(rowIdx, colIdx) = p.intensity;
+  }
+
+  return true;
+}
+
+
 PclPcXYZ HDL64RIConverter::reconstructPcFromRi(cv::Mat *ri)
 {
   PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
@@ -363,6 +399,50 @@ PclPcXYZI HDL64RIConverter::reconstructPcFromRiWithInonP (cv::Mat *ri)
   }
 
   debug_print("avg (xyz): %f, %f, %f, rho(%f)", xSum/pc->size(), ySum/pc->size(), zSum/pc->size(), rhoSum/pc->size());
+
+  pc->width = pc->size();
+  pc->height = 1;
+  return pc;
+}
+
+
+PclPcXYZI HDL64RIConverter::reconstructPcFromRiWithIm(cv::Mat &ri, cv::Mat &intMap)
+{
+
+  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
+
+  if(ri.rows != intMap.rows || ri.cols != intMap.cols)
+  {
+    debug_print("RI and IntMap are not matched.");
+    return NULL;
+  }
+
+  for(int y = 0; y <= ri.rows; y++) {
+    for(int x = 0; x <= ri.cols; x++) {
+      float rho       = ri.at<float>(y, x);
+      float intensity = intMap.at<float>(y, x);
+
+      if(rho > 2 && rho < 81) { // rho is between 2~81
+        float nTheta = (y * thetaPrecision);
+        float nPi = (x * piPrecision);
+
+        float theta = nTheta - HDL64_VERTICAL_DEGREE_OFFSET;
+        float pi    = nPi    - HDL64_HORIZONTAL_DEGREE_OFFSET;
+
+        float rTheta = theta * PI/180.0f;
+        float rPi    = pi    * PI/180.0f;
+
+        PclXYZI p;
+
+        p.x         = rho * std::sin(rTheta) * std::cos(rPi);
+        p.y         = rho * std::sin(rTheta) * std::sin(rPi);
+        p.z         = rho * std::cos(rTheta);
+        p.intensity = intensity;
+
+        pc->push_back(p);
+      }
+    }
+  }
 
   pc->width = pc->size();
   pc->height = 1;
