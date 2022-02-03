@@ -5,14 +5,18 @@ using namespace std;
 int main(int argc, char* argv[]) {
   // ./generate_ri_dataset source_dir dest_dir horizontal_res
 
-  if(argc != 4) exit(1);
+  if(argc != 5) exit(1);
   std::string sourceDir  = argv[1];
   std::string destDir    = argv[2];
   std::string horizRes   = argv[3];
+  std::string zeroWidth  = argv[4];
 
   cout << sourceDir << endl;
   cout << destDir << endl;
   cout << horizRes << endl;
+  cout << zeroWidth << endl;
+
+  int zeros = stoi(zeroWidth);
 
   std::ostringstream os;
   PcReader pcReader;
@@ -51,7 +55,7 @@ int main(int argc, char* argv[]) {
   debug_print("# of scans: %d", numScans);
   for(int idx = 0; idx < numScans; idx++)
   {
-    os << std::setw(6) << std::setfill('0') << idx;
+    os << std::setw(zeros) << std::setfill('0') << idx;
     std::string index = os.str();
     std::string fn = sourceDir + "/" + index + ".bin";
     os.str(""); os.clear();
