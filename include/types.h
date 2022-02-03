@@ -4,6 +4,13 @@
 #define __PCC_TYPES__
 
 
+typedef struct RawPc
+{
+  uint32_t numOfPoints;
+  float *buf;
+} RawPc;
+
+
 typedef struct HDL64PointCloud
 {
   float x;

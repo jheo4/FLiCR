@@ -16,6 +16,38 @@ HDL64RIConverter::HDL64RIConverter(double thetaPrecision, double piPrecision, do
 }
 
 
+cv::Mat* HDL64RIConverter::convertRawPc2Ri(RawPc pc)
+{
+  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+
+  #pragma omp parallel for
+  for(uint32_t i = 0; i < pc.numOfPoints; i++)
+  {
+    int pointIdx = i*3;
+    float x = pc.buf[pointIdx];
+    float y = pc.buf[pointIdx+1];
+    float z = pc.buf[pointIdx+2];
+
+    float rho    = std::sqrt(x*x + y*y + z*z);
+
+    float rTheta = std::acos(z/rho);
+    float rPi    = std::atan2(y, x);
+
+    float theta  = rTheta * 180.0f/PI;
+    float pi     = rPi * 180.0f/PI;
+
+    float nTheta = theta + HDL64_VERTICAL_DEGREE_OFFSET;
+    float nPi    = pi + HDL64_HORIZONTAL_DEGREE_OFFSET;
+
+    int rowIdx = std::min(ri->rows-1, std::max(0, (int)(nTheta/thetaPrecision)));
+    int colIdx = std::min(ri->cols-1, std::max(0, (int)(nPi/piPrecision)));
+
+    ri->at<float>(rowIdx, colIdx) = rho;
+  }
+
+  return ri;
+}
+
 
 cv::Mat* HDL64RIConverter::convertPc2Ri(PclPcXYZ pc)
 {

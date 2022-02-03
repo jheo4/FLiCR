@@ -16,6 +16,8 @@ class PcReader
 {
   public:
     PcReader();
+    RawPc rawReadXyzBin(std::string fileName);
+
     PclPcXYZ  readXyzBin (std::string fileName);
     PclPcXYZ  readXyzFromXyziBin (std::string fileName);
     PclPcXYZI readXyziBin(std::string fileName);

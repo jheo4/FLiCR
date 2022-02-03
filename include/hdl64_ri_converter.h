@@ -20,6 +20,7 @@ class HDL64RIConverter
                      double thetaOffset = HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
                      double piOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET/HDL64_PI_PRECISION);
 
+    cv::Mat*  convertRawPc2Ri          (RawPc pc);
     cv::Mat*  convertPc2Ri             (PclPcXYZ pc);
     cv::Mat*  convertPc2RinonP         (PclPcXYZ pc);
     cv::Mat*  convertPc2RiWithI        (PclPcXYZI);

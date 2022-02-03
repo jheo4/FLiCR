@@ -5,6 +5,26 @@ PcReader::PcReader()
 {
 }
 
+
+RawPc PcReader::rawReadXyzBin(std::string fileName)
+{
+  FILE* fp = fopen(fileName.c_str(), "rb");
+  if(fp == nullptr)
+  {
+    debug_print("Invalid input file name");
+    exit(1);
+  }
+
+  uint32_t readBufSize = 4800000;
+  RawPc pc;
+  pc.buf = new float[readBufSize];
+  pc.numOfPoints = fread(pc.buf, sizeof(float), int(readBufSize/4), fp);
+  pc.numOfPoints = pc.numOfPoints/3;
+
+  return pc;
+}
+
+
 PclPcXYZ PcReader::readXyzBin(std::string fileName)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");

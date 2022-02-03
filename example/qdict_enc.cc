@@ -10,12 +10,12 @@ int main(int argc, char* argv[]) {
   std::string output = argv[2];
   std::string riRes  = argv[3];
 
-  cout << input << endl;
-  cout << output << endl;
-  cout << riRes << endl;
+  //cout << input << endl;
+  //cout << output << endl;
+  //cout << riRes << endl;
 
   PcReader pcReader;
-  PclPcXYZ pc;
+  RawPc pc;
   FILE* ofp = fopen(output.c_str(), "wb");
   if(ofp == NULL)
   {
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  pc = pcReader.readXyzFromXyziBin(input);
+  pc = pcReader.rawReadXyzBin(input);
   double piPrec = 360.0/stof(riRes);
   HDL64RIConverter converter(HDL64_THETA_PRECISION,
                              piPrec,
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   BoostZip boostZip;
   std::vector<char> dictRes;
 
-  ri = converter.convertPc2Ri(pc);
+  ri = converter.convertRawPc2Ri(pc);
   converter.normalizeRi(ri, &nRi, &riMin, &riMax);
   boostZip.deflateGzip((char*)nRi.data, nRi.elemSize()*nRi.total(), dictRes);
 

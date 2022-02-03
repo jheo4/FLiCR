@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
 
   converter.denormalizeRi(&recNri, 80, &recRiFromNri);
   pc = converter.reconstructPcFromRi(&recRiFromNri);
+  //pc = converter.reconstructPcFromRinonP(&recRiFromNri);
 
   writer.writeBin(output, pc);
 
