@@ -35,20 +35,22 @@ int main(int argc, char* argv[]) {
   uint32_t encodedSize;
   encodedSize = fread(readBuf, sizeof(char), readBufSize, ifp);
 
-  BoostZip boostzip;
+  for(int i = 0; i < 100; i++)
+  {
+    BoostZip boostzip;
 
-  std::vector<char> encoded(readBuf, readBuf + encodedSize);
-  std::vector<char> decoded;
+    std::vector<char> encoded(readBuf, readBuf + encodedSize);
+    std::vector<char> decoded;
 
-  boostzip.inflateGzip(encoded, decoded);
-  cv::Mat recNri(64, stoi(riRes), CV_8UC1, decoded.data());
-  cv::Mat recRiFromNri;
+    boostzip.inflateGzip(encoded, decoded);
+    cv::Mat recNri(64, stoi(riRes), CV_8UC1, decoded.data());
+    cv::Mat recRiFromNri;
 
-  converter.denormalizeRi(&recNri, 80, &recRiFromNri);
-  pc = converter.reconstructPcFromRi(&recRiFromNri);
-  //pc = converter.reconstructPcFromRinonP(&recRiFromNri);
+    converter.denormalizeRi(&recNri, 80, &recRiFromNri);
+    pc = converter.reconstructPcFromRi(&recRiFromNri);
 
-  writer.writeBin(output, pc);
+    if(i == 0) writer.writeBin(output, pc);
+  }
 
   fclose(ifp);
 

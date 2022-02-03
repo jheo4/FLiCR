@@ -10,12 +10,12 @@ int main(int argc, char* argv[]) {
   std::string output = argv[2];
   std::string riRes  = argv[3];
 
-  //cout << input << endl;
-  //cout << output << endl;
-  //cout << riRes << endl;
+  cout << input << endl;
+  cout << output << endl;
+  cout << riRes << endl;
 
   PcReader pcReader;
-  RawPc pc;
+  PclPcXYZ pc;
   FILE* ofp = fopen(output.c_str(), "wb");
   if(ofp == NULL)
   {
@@ -23,24 +23,27 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  pc = pcReader.rawReadXyzBin(input);
+  pc = pcReader.readXyzFromXyziBin(input);
   double piPrec = 360.0/stof(riRes);
   HDL64RIConverter converter(HDL64_THETA_PRECISION,
                              piPrec,
                              HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
                              HDL64_HORIZONTAL_DEGREE_OFFSET/piPrec);
 
-  cv::Mat *ri, nRi;
-  double riMin, riMax;
-  BoostZip boostZip;
-  std::vector<char> dictRes;
+  for(int i = 0; i < 100; i++)
+  {
+    cv::Mat *ri, nRi;
+    double riMin, riMax;
+    BoostZip boostZip;
+    std::vector<char> dictRes;
 
-  ri = converter.convertRawPc2Ri(pc);
-  converter.normalizeRi(ri, &nRi, &riMin, &riMax);
-  boostZip.deflateGzip((char*)nRi.data, nRi.elemSize()*nRi.total(), dictRes);
+    ri = converter.convertPc2Ri(pc);
+    converter.normalizeRi(ri, &nRi, &riMin, &riMax);
+    boostZip.deflateGzip((char*)nRi.data, nRi.elemSize()*nRi.total(), dictRes);
 
-  // save file to bin
-  fwrite(dictRes.data(), sizeof(char), dictRes.size(), ofp);
+    // save file to bin
+    if(i == 0) fwrite(dictRes.data(), sizeof(char), dictRes.size(), ofp);
+  }
 
   fclose(ofp);
 
