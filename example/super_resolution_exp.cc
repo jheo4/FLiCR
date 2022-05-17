@@ -53,36 +53,57 @@ int main() {
   debug_print("# of scans: %d", numScans);
   numScans = 1;
 
-  double piPrec[6] = {HDL64_PI_PRECISION_4500, HDL64_PI_PRECISION_4096, HDL64_PI_PRECISION_2048, HDL64_PI_PRECISION_1024, HDL64_PI_PRECISION_512, HDL64_PI_PRECISION_256};
+  double piPrec[6] = {HDL64_PI_PRECISION_4500,
+                      HDL64_PI_PRECISION_4096,
+                      HDL64_PI_PRECISION_2048,
+                      HDL64_PI_PRECISION_1024,
+                      HDL64_PI_PRECISION_512,
+                      HDL64_PI_PRECISION_256};
+
   for(int idx = 0; idx < numScans; idx++)
   {
     os << std::setw(10) << std::setfill('0') << idx;
     std::string fn = "/home/jin/mnt/Data/kitti/City/2011_09_26_drive_0051_sync/2011_09_26/2011_09_26_drive_0051_sync/velodyne_points/data/0000000000.bin";
     os.str(""); os.clear();
 
+    // read data
     PclPcXYZ pcXyz;
     std::vector<float> intensity;
     if(pcReader.readXyzInt(fn, pcXyz, intensity) == false) return -1;
 
-    for(int prec = 2; prec < 6; prec++)
+    visualizer.setViewer(pcXyz);
+    visualizer.show(1);
+    visualizer.saveToFile("original.png");
+
+    for(int prec = 1; prec < 6; prec++)
     {
       int row = 64;
-      int col = HDL64_HORIZONTAL_DEGREE_OFFSET/piPrec[prec];
-      HDL64RIConverter riConverter(HDL64_THETA_PRECISION, piPrec[prec], row, col);
-      debug_print("%f: %d x %d",  riConverter.piPrecision, riConverter.riCol, riConverter.riRow);
+      int origCol = HDL64_HORIZONTAL_DEGREE/piPrec[prec];
 
-      PclPcXYZ decPcXyz;
+      int newCol  = (float)origCol * 2;
+      double newPrec = piPrec[prec] / 2;
 
-      /* pc -> ri -> nRi -> yuv -> encoded bytes */
+      HDL64RIConverter riConverter(HDL64_THETA_PRECISION, piPrec[prec], row, origCol);
+      HDL64RIConverter newRiConverter(HDL64_THETA_PRECISION, newPrec, row, newCol);
+
+      if(newCol != newRiConverter.riCol)
+      {
+        debug_print("newCol %d, newRiConverter.riCol %d -- mismatch", origCol, newRiConverter.riCol);
+      }
+
+      debug_print("Original Prec (%f) for %dx%d", riConverter.piPrecision,       riConverter.riCol,    riConverter.riRow);
+      debug_print("New      Prec (%f) for %dx%d", newRiConverter.piPrecision, newRiConverter.riCol, newRiConverter.riRow);
+
+
       cv::Mat *ri;
-      cv::Mat nRi, upRi, dnRi;
+      cv::Mat nRi, upRi;
+      cv::Mat origDnRi, dnRi;
       double riMax, riMin;
 
-      st = getTsNow();
-      ri = riConverter.convertPc2Ri(pcXyz); // TODO: need to encode intensity also
+      PclPcXYZ origRecXyz, decPcXyz;
+
+      ri = riConverter.convertPc2Ri(pcXyz);
       riConverter.normalizeRi(ri, &nRi, &riMin, &riMax);
-      et = getTsNow();
-      pc2nri->info("PC2nRI exe\t{}", et-st);
 
       // upscale
       // cv::INTER_LINEAR
@@ -90,45 +111,35 @@ int main() {
       // cv::INTER_CUBIC
       // cv::INTER_LANCZOS4
       // cv::INTER_AREA
-      double resizeTime = 0;
+      cv::resize(nRi, upRi, cv::Size(newCol, row), cv::INTER_LINEAR);
 
-      st = getTsNow();
-
-      int width  = (float)col*1.5;
-      int height = 64;
-      HDL64RIConverter riConverter2(HDL64_THETA_PRECISION, piPrec[prec]*1.5, height, width);
-
-      cv::resize(nRi, upRi, cv::Size(width, height), cv::INTER_AREA);
-      debug_print("supersample: %d %d", upRi.cols,  upRi.rows);
-      et = getTsNow();
-      resizeTime = et - st;
-
-      cv::imshow("Resized Down by defining height and width", nRi);
-      cv::imshow("Resized Up image by defining height and width", upRi);
+      cv::imshow("subsampled RI", nRi);
+      cv::imshow("enlarged RI from subsampled RI", upRi);
       cv::waitKey();
 
 
       st = getTsNow();
-      riConverter2.denormalizeRi(&upRi, riMax, &dnRi);
-      decPcXyz = riConverter2.reconstructPcFromRi(&dnRi);
-      et = getTsNow();
-      nri2pc->info("nRI2PC, resize exe\t{}\t{}", et-st, resizeTime);
+      newRiConverter.denormalizeRi(&upRi, riMax, &dnRi);
+      newRiConverter.denormalizeRi(&nRi, riMax, &origDnRi);
 
-      // metric logging
-      float samplingError = calcSamplingError(pcXyz, decPcXyz);
-      float PSNR = calcPSNR(pcXyz, decPcXyz, 80);
-      float CD   = calcCD(pcXyz, decPcXyz);
+      decPcXyz = newRiConverter.reconstructPcFromRi(&dnRi);
+      origRecXyz = riConverter.reconstructPcFromRi(&origDnRi);
 
-      metricLogger->info("\t{}\t{}\t{}", samplingError, PSNR, CD);
+      visualizer.setViewer(origRecXyz);
+      visualizer.show(1);
+      visualizer.saveToFile(to_string(prec)+"_orig.png");
 
       visualizer.setViewer(decPcXyz);
       visualizer.show(1);
       visualizer.saveToFile(to_string(prec)+".png");
 
+      origDnRi.release();
       dnRi.release();
       nRi.release();
       upRi.release();
       decPcXyz->clear();
+      origRecXyz->clear();
+
       printProgress((float)idx/(float)numScans);
     }
     printProgress(1);

@@ -47,8 +47,8 @@ metric_data : "/home/jin/mnt/Data/kitti/City"
 # Decoders: mjpeg h264    h264_cuvid hevc    hevc_cuvid(NA)
 enc: "libx264"
 dec: "h264"
-qp : 0
-crf: -1
+qp : -1
+crf: 0
 br : 4000000
-fps: 60
+fps: 30
 

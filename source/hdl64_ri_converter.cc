@@ -276,7 +276,7 @@ PclPcXYZ HDL64RIConverter::reconstructPcFromRi(cv::Mat *ri)
     for(int y = 0; y < ri->rows; y++) {
       for(int x = 0; x < ri->cols; x++) {
         float rho = ri->at<float>(y, x);
-        if(rho > 2 && rho < 80.2) { // rho is between 2~81
+        if(rho >= 1 && rho <= 80) { // rho is between 2~81
           float nTheta = (y * thetaPrecision);
           float nPi = (x * piPrecision);
 
@@ -316,7 +316,7 @@ PclPcXYZ HDL64RIConverter::reconstructPcFromRinonP(cv::Mat *ri)
     for(int x = 0; x <= ri->cols; x++) {
       //float rho = ri->at<float>(y, x);
       float rho = ri->at<float>(y, x);
-      if(rho > 2 && rho < 81) { // rho is between 2~81
+      if(rho >= 1 && rho <= 80) { // rho is between 2~81
         float nTheta = (y * thetaPrecision);
         float nPi = (x * piPrecision);
 
@@ -363,7 +363,7 @@ PclPcXYZI HDL64RIConverter::reconstructPcFromRiWithI(cv::Mat *ri)
       for(int x = 0; x <= ri->cols; x++) {
         float rho       = ri->at<cv::Vec2f>(y, x)[0];
         float intensity = ri->at<cv::Vec2f>(y, x)[1];
-        if(rho > 2 && rho < 80.2) { // rho is between 2~81
+        if(rho >= 1 && rho <= 80) { // rho is between 2~81
           float nTheta = (y * thetaPrecision);
           float nPi = (x * piPrecision);
 
@@ -405,7 +405,7 @@ PclPcXYZI HDL64RIConverter::reconstructPcFromRiWithInonP (cv::Mat *ri)
     for(int x = 0; x <= ri->cols; x++) {
       float rho       = ri->at<cv::Vec2f>(y, x)[0];
       float intensity = ri->at<cv::Vec2f>(y, x)[1];
-      if(rho > 2 && rho < 81) { // rho is between 2~81
+      if(rho >= 1 && rho <= 80) { // rho is between 2~81
         float nTheta = (y * thetaPrecision);
         float nPi = (x * piPrecision);
 
@@ -454,7 +454,7 @@ PclPcXYZI HDL64RIConverter::reconstructPcFromRiWithIm(cv::Mat &ri, cv::Mat &intM
       float rho       = ri.at<float>(y, x);
       float intensity = intMap.at<float>(y, x);
 
-      if(rho > 2 && rho < 81) { // rho is between 2~81
+      if(rho >= 1 && rho <= 80) { // rho is between 2~81
         float nTheta = (y * thetaPrecision);
         float nPi = (x * piPrecision);
 
