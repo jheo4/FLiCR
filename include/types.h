@@ -1,88 +1,43 @@
+#pragma once
+
 #include <bits/stdc++.h>
+#include <pcl/common/common_headers.h>
+#include <pcl/PolygonMesh.h>
 
-#ifndef __PCC_TYPES__
-#define __PCC_TYPES__
-
-
-typedef struct RawPc
+namespace flicr
 {
-  uint32_t numOfPoints;
-  float *buf;
-} RawPc;
-
-
-typedef struct HDL64PointCloud
+namespace types
 {
-  float x;
-  float y;
-  float z;
-  float r;
-
-  HDL64PointCloud(): x(0), y(0), z(0), r(0) {}
-  HDL64PointCloud(float x, float y): x(x), y(y), z(0), r(0) {}
-  HDL64PointCloud(float x, float y, float z, float r): x(x), y(y), z(z), r(r) {}
-
-  std::vector<float> getXYZ()  { return {x, y, z}; }
-  std::vector<float> getXYZR() { return {x, y, z, r}; }
-
-  void print() { printf("HDL64PointCloud: x(%f) y(%f) z(%f) r(%f)\n", x, y, z, r); }
-} HDL64PointCloud;
+  using PclXyz    = pcl::PointXYZ;
+  using PclXyzi   = pcl::PointXYZI;
+  using PclPcXyz  = pcl::PointCloud<PclXyz>::Ptr;
+  using PclPcXyzi = pcl::PointCloud<PclXyzi>::Ptr;
+  using PclMesh   = pcl::PolygonMeshPtr;
 
 
-typedef struct Quaternion
-{
-  float x;
-  float y;
-  float z;
-  float w;
-
-  Quaternion(): x(0), y(0), z(0), w(0) {}
-  std::vector<float> get() { return {x, y, z, w}; }
-  void print() { printf("Quaternion: x(%f) y(%f) z(%f) w(%f)\n", x, y, z, w); }
-} Quaternion;
-
-
-typedef struct VecXyz
-{
-  float x;
-  float y;
-  float z;
-
-  VecXyz(): x(0), y(0), z(0) {}
-
-  std::vector<float> get() { return {x, y, z}; }
-
-  void print() { printf("x(%f) y(%f) z(%f)\n", x, y, z); }
-} VecXyz;
-
-
-typedef struct OxtsMsg
-{
-  Quaternion orientation;
-  VecXyz angularVelocity;
-  VecXyz linearAcceleration;
-  VecXyz gpsVelocity;
-
-  std::vector<float> getOrientation() { return orientation.get(); };
-  std::vector<float> getAngularVelocity() { return angularVelocity.get(); };
-  std::vector<float> getLinearAcceleration() { return linearAcceleration.get(); };
-  std::vector<float> getGpsVelocity() { return gpsVelocity.get(); };
-
-  void print()
+  typedef struct RawPc
   {
-    orientation.print();
+    uint32_t numOfPoints;
+    float *buf;
+  } RawPc;
 
-    printf("angularVelocity: ");
-    angularVelocity.print();
 
-    printf("linearAcceleration: ");
-    linearAcceleration.print();
+  PclPcXyz xyzi2xyz(PclPcXyzi pcXyzi)
+  {
+    PclPcXyz pcXyz(new pcl::PointCloud<PclXyz>);
 
-    printf("gpsVelocity: ");
-    gpsVelocity.print();
+    for(int i = 0; i < (int)pcXyzi->size(); i++)
+    {
+      PclXyz p;
+      p.x = pcXyzi->points[i].x;
+      p.y = pcXyzi->points[i].y;
+      p.z = pcXyzi->points[i].y;
+
+      pcXyz->push_back(p);
+    }
+
+    return pcXyz;
   }
-} OxtsMsg;
-
-
-#endif
+}
+}
 

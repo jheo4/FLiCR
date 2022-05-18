@@ -1,14 +1,15 @@
-#ifndef __PCC_DEFS__
-#define __PCC_DEFS__
+#pragma once
 
 #define PI 3.14159266
+#define RAD2DEGREE(r) (r*(180.0f/PI))
+#define DEGREE2RAD(r) (r*(PI/180.0f))
+//#define RAD2DEGREE (180.0f/PI)
 
 #define KITTI_DATASET_FREQUENCY 10
 
 // https://bit.ly/3gHtGzf
-#define HDL64_THETA_PRECISION 0.4187
-
-#define HDL64_PI_PRECISION 0.08
+#define HDL64_THETA_PRECISION 0.4187 // Vertical Precision
+#define HDL64_PI_PRECISION 0.08      // Horizontal Precision
 
 #define HDL64_PI_PRECISION_4500 0.08
 #define HDL64_PI_PRECISION_4096 0.087890625
@@ -22,12 +23,28 @@
 #define HDL64_VERTICAL_DEGREE   26.8f
 #define HDL64_HORIZONTAL_DEGREE 360.0f
 
-#include <pcl/common/common_headers.h>
-#include <pcl/PolygonMesh.h>
-using PclXYZ    = pcl::PointXYZ;
-using PclXYZI   = pcl::PointXYZI;
-using PclPcXYZ  = pcl::PointCloud<PclXYZ>::Ptr;
-using PclPcXYZI = pcl::PointCloud<PclXYZI>::Ptr;
-using PclMesh   = pcl::PolygonMeshPtr;
-#endif
+#define HDL64_MIN_RANGE 0
+#define HDL64_MAX_RANGE 80
+
+
+#define debug_print(...) do { \
+                              fprintf(stderr, "\033[1;31m[DEBUG] \033[0;32m[FUNC] %s \033[0m", __PRETTY_FUNCTION__); \
+                              fprintf(stderr, __VA_ARGS__); \
+                              fprintf(stderr, "\n"); \
+                            } while (0)
+
+#include <chrono>
+#define getTsNow() ( (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 1000 )
+#define sleepMS(a) std::this_thread::sleep_for(std::chrono::milliseconds(a));
+
+#include <bits/stdc++.h>
+#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+#define PBWIDTH 60
+static void printProgress(double percentage) {
+    int val = (int) (percentage * 100);
+    int lpad = (int) (percentage * PBWIDTH);
+    int rpad = PBWIDTH - lpad;
+    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+    fflush(stdout);
+}
 
