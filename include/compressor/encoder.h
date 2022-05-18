@@ -1,5 +1,4 @@
-#ifndef __PCC_ENCODER__
-#define __PCC_ENCODER__
+#pragma once
 
 #include <opencv2/opencv.hpp>
 
@@ -12,8 +11,8 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 
-#include "utils.h"
-
+namespace flicr
+{
 class Encoder
 {
   private:
@@ -29,6 +28,5 @@ class Encoder
     void encodeYUV(cv::Mat &inFrame, AVPacket &outPkt);
     void saveAsFile(AVPacket &inPkt, std::string fn);
 };
-
-#endif
+}
 
