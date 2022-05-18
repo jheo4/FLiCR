@@ -1,5 +1,6 @@
 #include <visualizer.h>
-#include <utils.h>
+
+using namespace flicr;
 
 Visualizer::Visualizer()
 {
@@ -13,14 +14,14 @@ Visualizer::~Visualizer()
 }
 
 
-void Visualizer::initViewerXYZ()
+void Visualizer::initViewerXyz()
 {
   viewer = pcl::visualization::PCLVisualizer::Ptr(new pcl::visualization::PCLVisualizer("PointCloudVisualizer"));
   viewer->setBackgroundColor(0, 0, 0);
 }
 
 
-void Visualizer::setViewer(PclPcXYZ pc)
+void Visualizer::setViewer(types::PclPcXyz pc)
 {
   viewer->removeAllPointClouds();
   viewer->addPointCloud<pcl::PointXYZ>(pc);
@@ -31,7 +32,7 @@ void Visualizer::setViewer(PclPcXYZ pc)
 }
 
 
-void Visualizer::setViewer(PclPcXYZI pc)
+void Visualizer::setViewer(types::PclPcXyzi pc)
 {
   viewer->removeAllPointClouds();
   viewer->addPointCloud<pcl::PointXYZI>(pc);
@@ -42,7 +43,7 @@ void Visualizer::setViewer(PclPcXYZI pc)
 }
 
 
-void Visualizer::setViewer(PclMesh mesh)
+void Visualizer::setViewer(types::PclMesh mesh)
 {
   viewer->removeAllPointClouds();
   viewer->removeAllShapes();

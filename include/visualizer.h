@@ -1,12 +1,14 @@
+#pragma once
+
 #include <bits/stdc++.h>
 #include <pcl/common/common_headers.h>
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <defs.h>
+#include <types.h>
 
-#ifndef __PCC_VISUALIZER__
-#define __PCC_VISUALIZER__
-
+namespace flicr
+{
 class Visualizer
 {
   protected:
@@ -14,13 +16,12 @@ class Visualizer
   public:
     Visualizer();
     ~Visualizer();
-    void initViewerXYZ();
-    void setViewer(PclPcXYZ pc);
-    void setViewer(PclPcXYZI pc);
-    void setViewer(PclMesh mesh);
+    void initViewerXyz();
+    void setViewer(types::PclPcXyz pc);
+    void setViewer(types::PclPcXyzi pc);
+    void setViewer(types::PclMesh mesh);
     void show(int tickPeriod=100);
     void saveToFile(std::string fileName);
 };
-
-#endif
+}
 
