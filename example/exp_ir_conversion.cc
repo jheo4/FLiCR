@@ -1,4 +1,4 @@
-#include <3dpcc>
+#include <flicr>
 #include <pcl/io/auto_io.h>
 #include <pcl/common/time.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -17,27 +17,43 @@
 #include <vtkCubeSource.h>
 #include <vtkCleanPolyData.h>
 
-
-
 using namespace std;
+using namespace flicr;
 
 
-int main() {
-  double st, et;
-  int riRow, riCol;
+int main(int argc, char** argv) {
+  cxxopts::Options options("FLiCR", "FLiCR");
+  options.add_options()
+    ("y, yaml", "YAML file", cxxopts::value<std::string>())
+    ("h, help", "Print usage")
+    ;
 
-  std::string pccHome = getenv("PCC_HOME");
-  if(pccHome.empty())
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
   {
-    std::cout << "set PCC_HOME" << std::endl;
-    return 0;
+    std::cout << options.help() << std::endl;
+    exit(0);
   }
-  std::string configYaml = pccHome + "/config.yaml";
 
-  YAML::Node config = YAML::LoadFile(configYaml);
+  std::string yamlConfig;
+  if(parsedArgs.count("yaml"))
+  {
+    yamlConfig = parsedArgs["yaml"].as<std::string>();
+    std::cout << "YAML Config: " << yamlConfig << std::endl;
+  }
+  else
+  {
+    std::cout << "Invalid YAML Config" << std::endl;
+    exit(0);
+  }
+
+  double st, et;
+
+  YAML::Node config = YAML::LoadFile(yamlConfig);
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string dataCategory  = config["data_cat"].as<std::string>();
 
+  int riRow, riCol;
   int numScans = 100;
 
   riRow = (int)(HDL64_VERTICAL_DEGREE   / HDL64_THETA_PRECISION);
@@ -51,9 +67,10 @@ int main() {
 
   std::ostringstream os;
   PcReader pcReader;
-  HDL64RIConverter riConverter(HDL64_THETA_PRECISION, HDL64_PI_PRECISION_4500,
-                               HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
-                               HDL64_HORIZONTAL_DEGREE_OFFSET/HDL64_PI_PRECISION_4500);
+  RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                          HDL64_THETA_PRECISION, HDL64_PI_PRECISION_4500,
+                          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
   for(int idx = 0; idx < numScans; idx++)
   {
@@ -61,22 +78,22 @@ int main() {
     std::string fn = lidarDataPath + "/" + os.str() + ".bin";
     os.str(""); os.clear();
 
-    PclPcXYZ pcXyz = pcReader.readXyzFromXyziBin(fn);
+    types::PclPcXyz pcXyz = pcReader.readXyzFromXyziBin(fn);
 
     /* pc -> ri -> nRi -> yuv -> encoded bytes */
-    cv::Mat *ri;
+    cv::Mat ri;
 
     st = getTsNow();
-    ri = riConverter.convertPc2Ri(pcXyz);
+    riConverter.convertPc2Ri(pcXyz, ri, true);
     et = getTsNow();
-    pc2ri->info("PC2RI exe\t{}", et-st);
-    ri->release(); delete ri;
+    pc2ri->info("Pc2Ri parallel exe\t{}", et-st);
+    ri.release();
 
     st = getTsNow();
-    ri = riConverter.convertPc2RinonP(pcXyz);
+    riConverter.convertPc2Ri(pcXyz, ri, false);
     et = getTsNow();
-    pc2rinp->info("PC2RI_NonP exe\t{}", et-st);
-    ri->release(); delete ri;
+    pc2rinp->info("Pc2Ri non-parallel exe\t{}", et-st);
+    ri.release();
 
     st = getTsNow();
     pcl::octree::OctreePointCloudVoxelCentroid<pcl::PointXYZ> octree(0.1);
@@ -87,16 +104,16 @@ int main() {
     pc2octree->info("PC2Octree exe\t{}", et-st);
 
     st = getTsNow();
-    pcl::KdTreeFLANN<PclXYZ> kdtree;
+    pcl::KdTreeFLANN<types::PclXyz> kdtree;
     kdtree.setInputCloud(pcXyz);
     et = getTsNow();
     pc2kdtree->info("PC2kdtree exe\t{}", et-st);
 
     pcl::PolygonMeshPtr mesh = nullptr;
     st = getTsNow();
-    pcl::NormalEstimation<PclXYZ, pcl::Normal> normEstimation;
+    pcl::NormalEstimation<types::PclXyz, pcl::Normal> normEstimation;
     pcl::PointCloud<pcl::Normal>::Ptr norms(new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<PclXYZ>::Ptr kdTreeXyz(new pcl::search::KdTree<PclXYZ>);
+    pcl::search::KdTree<types::PclXyz>::Ptr kdTreeXyz(new pcl::search::KdTree<types::PclXyz>);
 
     // Get normal
     kdTreeXyz->setInputCloud(pcXyz);

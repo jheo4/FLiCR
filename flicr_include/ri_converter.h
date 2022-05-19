@@ -37,21 +37,21 @@ class RiConverter
     void XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRow, int &piCol);
     void RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float &y, float &z);
 
-    cv::Mat*  convertRawPc2Ri          (types::RawPc pc,     bool parallel);
-    cv::Mat*  convertPc2Ri             (types::PclPcXyz pc,  bool parallel);
-    cv::Mat*  convertPc2RiWithI        (types::PclPcXyzi,    bool parallel);
-    bool      convertPc2RiWithIm       (types::PclPcXyzi pc, cv::Mat &ri, cv::Mat &intMap, bool parallel);
-    cv::Mat*  convertPc2RiWithXYZ      (types::PclPcXyz pc,  bool parallel);
+    void  convertRawPc2Ri     (types::RawPc     inPc, cv::Mat &outRi, bool parallel);
+    void  convertPc2Ri        (types::PclPcXyz  inPc, cv::Mat &outRi, bool parallel);
+    void  convertPc2RiWithI   (types::PclPcXyzi inPc, cv::Mat &outRi, bool parallel);
+    void  convertPc2RiWithIm  (types::PclPcXyzi inPc, cv::Mat &outRi, cv::Mat &outIntMap, bool parallel);
+    void  convertPc2RiWithXyz (types::PclPcXyz  inPc, cv::Mat &outRiWithXyz, bool parallel);
 
-    types::PclPcXyz  reconstructPcFromRi       (cv::Mat *ri, bool parallel);
-    types::PclPcXyzi reconstructPcFromRiWithI  (cv::Mat *ri, bool parallel);
+    types::PclPcXyz  reconstructPcFromRi       (cv::Mat &ri, bool parallel);
+    types::PclPcXyzi reconstructPcFromRiWithI  (cv::Mat &ri, bool parallel);
     types::PclPcXyzi reconstructPcFromRiWithIm (cv::Mat &ri, cv::Mat &intMap, bool parallel);
 
     void normalizeRi(cv::Mat &origRi, cv::Mat &normRi);
-    void normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double *maxRho);
-    void normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double *minRho, double *maxRho);
-    void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, double *maxRho, double *maxInt);
-    void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Mat &intMap, double *maxRho, double *maxInt);
+    void normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double &maxRho);
+    void normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double &minRho, double &maxRho);
+    void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, double &maxRho, double &maxInt);
+    void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Mat &intMap, double &maxRho, double &maxInt);
 
     void denormalizeRi(cv::Mat &normRi, double minRho, double maxRho, cv::Mat &denormRi);
     void denormalizeRiWithI(cv::Mat &normRiWithI, double maxRho, double maxInt, cv::Mat &denormRiWithI);

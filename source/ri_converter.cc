@@ -76,124 +76,116 @@ void RiConverter::RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float
 }
 
 
-cv::Mat* RiConverter::convertRawPc2Ri(types::RawPc pc, bool parallel)
+void RiConverter::convertRawPc2Ri(types::RawPc inPc, cv::Mat &outRi, bool parallel)
 {
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  outRi = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
 
   #pragma omp parallel for if (parallel)
-  for(uint32_t i = 0; i < pc.numOfPoints; i++)
+  for(uint32_t i = 0; i < inPc.numOfPoints; i++)
   {
     int pointIdx = i*3;
-    float x = pc.buf[pointIdx];
-    float y = pc.buf[pointIdx+1];
-    float z = pc.buf[pointIdx+2];
+    float x = inPc.buf[pointIdx];
+    float y = inPc.buf[pointIdx+1];
+    float z = inPc.buf[pointIdx+2];
 
     float rho;
     int thetaRow, piCol;
 
     XYZ2RTP(x, y, z, rho, thetaRow, piCol);
 
-    int rowIdx = std::min(ri->rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(ri->cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    ri->at<float>(rowIdx, colIdx) = rho;
+    outRi.at<float>(rowIdx, colIdx) = rho;
   }
-
-  return ri;
 }
 
 
-cv::Mat* RiConverter::convertPc2Ri(types::PclPcXyz pc, bool parallel)
+void RiConverter::convertPc2Ri(types::PclPcXyz inPc, cv::Mat &outRi, bool parallel)
 {
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  outRi = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
 
   #pragma omp parallel for if (parallel)
-  for(int i = 0; i < (int)pc->points.size(); i++)
+  for(int i = 0; i < (int)inPc->points.size(); i++)
   {
-    float x = pc->points[i].x;
-    float y = pc->points[i].y;
-    float z = pc->points[i].z;
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
 
     float rho;
     int thetaRow, piCol;
 
     XYZ2RTP(x, y, z, rho, thetaRow, piCol);
 
-    int rowIdx = std::min(ri->rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(ri->cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    ri->at<float>(rowIdx, colIdx) = rho;
+    outRi.at<float>(rowIdx, colIdx) = rho;
   }
-
-  return ri;
 }
 
 
-cv::Mat* RiConverter::convertPc2RiWithI(types::PclPcXyzi pc, bool parallel)
+void RiConverter::convertPc2RiWithI(types::PclPcXyzi inPc, cv::Mat &outRi, bool parallel)
 {
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC2, cv::Scalar(0.f));
+  outRi = cv::Mat(riRow, riCol, CV_32FC2, cv::Scalar(0.f));
 
   #pragma omp parallel for if (parallel)
-  for(int i = 0; i < (int)pc->points.size(); i++)
+  for(int i = 0; i < (int)inPc->points.size(); i++)
   {
-    float x = pc->points[i].x;
-    float y = pc->points[i].y;
-    float z = pc->points[i].z;
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
 
     float rho;
     int thetaRow, piCol;
 
     XYZ2RTP(x, y, z, rho, thetaRow, piCol);
 
-    int rowIdx = std::min(ri->rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(ri->cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    ri->at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
-    ri->at<cv::Vec2f>(rowIdx, colIdx)[1] = pc->points[i].intensity;
+    outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
+    outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
   }
-
-  return ri;
 }
 
 
-bool RiConverter::convertPc2RiWithIm(types::PclPcXyzi pc, cv::Mat &ri, cv::Mat &intMap, bool parallel)
+void RiConverter::convertPc2RiWithIm(types::PclPcXyzi inPc, cv::Mat &outRi, cv::Mat &outIntMap, bool parallel)
 {
-  ri = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
-  intMap = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  outRi     = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
+  outIntMap = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
 
   #pragma omp parallel for if (parallel)
-  for(int i = 0; i< (int)pc->points.size(); i++)
+  for(int i = 0; i< (int)inPc->points.size(); i++)
   {
-    float x = pc->points[i].x;
-    float y = pc->points[i].y;
-    float z = pc->points[i].z;
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
 
     float rho;
     int thetaRow, piCol;
 
     XYZ2RTP(x, y, z, rho, thetaRow, piCol);
 
-    int rowIdx = std::min(ri.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(ri.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    ri.at<float>(rowIdx, colIdx) = rho;
-    intMap.at<float>(rowIdx, colIdx) = pc->points[i].intensity;
+    outRi.at<float>(rowIdx, colIdx) = rho;
+    outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
   }
-
-  return true;
 }
 
 
-cv::Mat* RiConverter::convertPc2RiWithXYZ(types::PclPcXyz pc, bool parallel)
+void RiConverter::convertPc2RiWithXyz(types::PclPcXyz inPc, cv::Mat &outRiWithXyz, bool parallel)
 {
-  cv::Mat *ri = new cv::Mat(riRow, riCol, CV_32FC4, cv::Scalar(0.f, 0.f, 0.f, 0.f));
+  outRiWithXyz = cv::Mat(riRow, riCol, CV_32FC4, cv::Scalar(0.f, 0.f, 0.f, 0.f));
 
   #pragma omp parallel for if (parallel)
-  for(int i = 0; i < (int)pc->points.size(); i++)
+  for(int i = 0; i < (int)inPc->points.size(); i++)
   {
-    float x = pc->points[i].x;
-    float y = pc->points[i].y;
-    float z = pc->points[i].z;
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
 
     //float r = p.r; // need to be encoded?
 
@@ -202,17 +194,15 @@ cv::Mat* RiConverter::convertPc2RiWithXYZ(types::PclPcXyz pc, bool parallel)
 
     XYZ2RTP(x, y, z, rho, thetaRow, piCol);
 
-    int rowIdx = std::min(ri->rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(ri->cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRiWithXyz.rows-1, std::max(0, thetaRow));
+    int colIdx = std::min(outRiWithXyz.cols-1, std::max(0, piCol));
 
-    ri->at<cv::Vec4f>(rowIdx, colIdx) = cv::Vec4f(rho, x, y, z);
+    outRiWithXyz.at<cv::Vec4f>(rowIdx, colIdx) = cv::Vec4f(rho, x, y, z);
   }
-
-  return ri;
 }
 
 
-types::PclPcXyz RiConverter::reconstructPcFromRi(cv::Mat *ri, bool parallel)
+types::PclPcXyz RiConverter::reconstructPcFromRi(cv::Mat &ri, bool parallel)
 {
   types::PclPcXyz pc(new pcl::PointCloud<types::PclXyz>);
   pc->reserve(160000);
@@ -223,9 +213,9 @@ types::PclPcXyz RiConverter::reconstructPcFromRi(cv::Mat *ri, bool parallel)
     privatePc.reserve(40000);
 
     #pragma omp for nowait
-    for(int y = 0; y < ri->rows; y++) {
-      for(int x = 0; x < ri->cols; x++) {
-        float rho = ri->at<float>(y, x);
+    for(int y = 0; y < ri.rows; y++) {
+      for(int x = 0; x < ri.cols; x++) {
+        float rho = ri.at<float>(y, x);
         if(rho > minRange && rho < maxRange) {
           types::PclXyz p;
           RTP2XYZ(rho, y, x, p.x, p.y, p.z);
@@ -244,7 +234,7 @@ types::PclPcXyz RiConverter::reconstructPcFromRi(cv::Mat *ri, bool parallel)
 }
 
 
-types::PclPcXyzi RiConverter::reconstructPcFromRiWithI(cv::Mat *ri, bool parallel)
+types::PclPcXyzi RiConverter::reconstructPcFromRiWithI(cv::Mat &ri, bool parallel)
 {
   types::PclPcXyzi pc(new pcl::PointCloud<types::PclXyzi>);
   pc->reserve(160000);
@@ -255,10 +245,10 @@ types::PclPcXyzi RiConverter::reconstructPcFromRiWithI(cv::Mat *ri, bool paralle
     privatePc.reserve(40000);
 
     #pragma omp for nowait
-    for(int y = 0; y <= ri->rows; y++) {
-      for(int x = 0; x <= ri->cols; x++) {
-        float rho       = ri->at<cv::Vec2f>(y, x)[0];
-        float intensity = ri->at<cv::Vec2f>(y, x)[1];
+    for(int y = 0; y <= ri.rows; y++) {
+      for(int x = 0; x <= ri.cols; x++) {
+        float rho       = ri.at<cv::Vec2f>(y, x)[0];
+        float intensity = ri.at<cv::Vec2f>(y, x)[1];
         if(rho > minRange && rho < maxRange) {
           types::PclXyzi p;
           RTP2XYZ(rho, y, x, p.x, p.y, p.z);
@@ -324,30 +314,30 @@ void RiConverter::normalizeRi(cv::Mat &origRi, cv::Mat &normRi)
 }
 
 
-void RiConverter::normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double *minRho, double *maxRho)
+void RiConverter::normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double &minRho, double &maxRho)
 {
   cv::Point minP, maxP;
-  cv::minMaxLoc(origRi, minRho, maxRho, &minP, &maxP);
+  cv::minMaxLoc(origRi, &minRho, &maxRho, &minP, &maxP);
   cv::normalize(origRi, normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 }
 
 
-void RiConverter::normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double *maxRho)
+void RiConverter::normalizeRi(cv::Mat &origRi, cv::Mat &normRi, double &maxRho)
 {
   double min;
-  normalizeRi(origRi, normRi, &min, maxRho);
+  normalizeRi(origRi, normRi, min, maxRho);
 }
 
 
-void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, double *maxRho, double *maxInt)
+void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, double &maxRho, double &maxInt)
 {
   double minRho, minInt;
   cv::Point minP, maxP;
 
   cv::Mat riChannels[2];
   cv::split(origRiWithI, riChannels);
-  cv::minMaxLoc(riChannels[0], &minRho, maxRho, &minP, &maxP);
-  cv::minMaxLoc(riChannels[1], &minInt, maxInt, &minP, &maxP);
+  cv::minMaxLoc(riChannels[0], &minRho, &maxRho, &minP, &maxP);
+  cv::minMaxLoc(riChannels[1], &minInt, &maxInt, &minP, &maxP);
   //debug_print("rho/intensity range: %f~%f / %f~%f", minRho, *maxRho, minInt, *maxInt);
 
   cv::Mat normalizedChannels[2];
@@ -358,15 +348,15 @@ void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, d
 }
 
 
-void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Mat &intMap, double *maxRho, double *maxInt)
+void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Mat &intMap, double &maxRho, double &maxInt)
 {
   double minRho, minInt;
   cv::Point minP, maxP;
 
   cv::Mat riChannels[2];
   cv::split(origRiWithI, riChannels);
-  cv::minMaxLoc(riChannels[0], &minRho, maxRho, &minP, &maxP);
-  cv::minMaxLoc(riChannels[1], &minInt, maxInt, &minP, &maxP);
+  cv::minMaxLoc(riChannels[0], &minRho, &maxRho, &minP, &maxP);
+  cv::minMaxLoc(riChannels[1], &minInt, &maxInt, &minP, &maxP);
 
   cv::normalize(riChannels[0], normRi, 0, 255, cv::NORM_MINMAX, CV_8UC1);
   cv::normalize(riChannels[1], intMap, 0, 255, cv::NORM_MINMAX, CV_8UC1);
