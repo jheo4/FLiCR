@@ -1,4 +1,7 @@
-#include "decoder.h"
+#include "compressor/decoder.h"
+#include "defs.h"
+
+using namespace flicr;
 
 Decoder::Decoder()
 {

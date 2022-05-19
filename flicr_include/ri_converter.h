@@ -53,7 +53,7 @@ class RiConverter
     void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRiWithI, double *maxRho, double *maxInt);
     void normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Mat &intMap, double *maxRho, double *maxInt);
 
-    void denormalizeRi(cv::Mat &normRi, double maxRho, cv::Mat &denormRi);
+    void denormalizeRi(cv::Mat &normRi, double minRho, double maxRho, cv::Mat &denormRi);
     void denormalizeRiWithI(cv::Mat &normRiWithI, double maxRho, double maxInt, cv::Mat &denormRiWithI);
     void denormalizeRiWithI(cv::Mat &normRi, cv::Mat &intMap, double maxRho, double maxInt, cv::Mat &denormRiWithI);
 

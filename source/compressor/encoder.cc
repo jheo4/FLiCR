@@ -1,4 +1,7 @@
-#include "encoder.h"
+#include "compressor/encoder.h"
+#include "defs.h"
+
+using namespace flicr;
 
 Encoder::Encoder()
 {

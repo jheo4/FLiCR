@@ -1,0 +1,20 @@
+#include <bits/stdc++.h>
+#include <yaml-cpp/yaml.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
+#include "./include/defs.h"
+#include "./include/types.h"
+
+#include "./include/metric_func.h"
+
+#include "./include/pc_reader.h"
+#include "./include/pc_writer.h"
+#include "./include/visualizer.h"
+#include "./include/ri_converter.h"
+
+#include "./include/compressor/encoder.h"
+#include "./include/compressor/decoder.h"
+#include "./include/compressor/boostzip.h"
+#include "./include/compressor/runlength_compressor.h"
+
