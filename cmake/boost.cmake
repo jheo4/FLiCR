@@ -6,8 +6,8 @@ macro(use_boost)
     message("\t Boost_LDFLAGS: ${Boost_LDFLAGS}")
 
     include_directories(${Boost_INCLUDE_DIRS})
-    list(APPEND PCC_CXX_FLAGS ${Boost_CFLAGS_OTHER})
-    list(APPEND PCC_LINKER_FLAGS ${Boost_LDFLAGS})
+    list(APPEND FLICR_CXX_FLAGS ${Boost_CFLAGS_OTHER})
+    list(APPEND FLICR_LINKER_FLAGS ${Boost_LDFLAGS})
   endif(Boost_FOUND)
 endmacro()
 

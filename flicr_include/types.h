@@ -22,7 +22,7 @@ namespace types
   } RawPc;
 
 
-  PclPcXyz xyzi2xyz(PclPcXyzi pcXyzi)
+  static PclPcXyz xyzi2xyz(PclPcXyzi pcXyzi)
   {
     PclPcXyz pcXyz(new pcl::PointCloud<PclXyz>);
 

@@ -3,18 +3,18 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include "./include/defs.h"
-#include "./include/types.h"
+#include "./flicr_include/defs.h"
+#include "./flicr_include/types.h"
 
-#include "./include/metric_func.h"
+#include "./flicr_include/metric_func.h"
 
-#include "./include/pc_reader.h"
-#include "./include/pc_writer.h"
-#include "./include/visualizer.h"
-#include "./include/ri_converter.h"
+#include "./flicr_include/pc_reader.h"
+#include "./flicr_include/pc_writer.h"
+#include "./flicr_include/visualizer.h"
+#include "./flicr_include/ri_converter.h"
 
-#include "./include/compressor/encoder.h"
-#include "./include/compressor/decoder.h"
-#include "./include/compressor/boostzip.h"
-#include "./include/compressor/runlength_compressor.h"
+#include "./flicr_include/compressor/encoder.h"
+#include "./flicr_include/compressor/decoder.h"
+#include "./flicr_include/compressor/boostzip.h"
+#include "./flicr_include/compressor/runlength_compressor.h"
 

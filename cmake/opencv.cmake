@@ -6,8 +6,8 @@ macro(use_opencv)
     message("\t OPENCV_LDFLAGS: ${OPENCV_LDFLAGS}")
 
     include_directories(${OPENCV_INCLUDE_DIRS})
-    list(APPEND PCC_CXX_FLAGS ${OPENCV_CFLAGS_OTHER})
-    list(APPEND PCC_LINKER_FLAGS ${OPENCV_LDFLAGS})
+    list(APPEND FLICR_CXX_FLAGS ${OPENCV_CFLAGS_OTHER})
+    list(APPEND FLICR_LINKER_FLAGS ${OPENCV_LDFLAGS})
   endif(OPENCV_FOUND)
 endmacro()
 

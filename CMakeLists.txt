@@ -36,8 +36,11 @@ message("\t FLICR_CXX_FLAGS: ${FLICR_CXX_FLAGS}")
 message("\t FLICR_LINKER_FLAGS: ${FLICR_LINKER_FLAGS}")
 message("\t FLICR_LINKER_LIBS: ${FLICR_LINKER_LIBS}")
 
-add_subdirectory(source)
 add_subdirectory(flicr_include)
+add_subdirectory(source)
+
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
+add_subdirectory(example)
 
 # Install
 string(REPLACE ";" " " FLICR_CXX_FLAGS    "${FLICR_CXX_FLAGS}")

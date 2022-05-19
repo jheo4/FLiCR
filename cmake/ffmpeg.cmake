@@ -48,8 +48,8 @@ macro(use_ffmpeg)
   message("\t FFMPEG_LDFLAGS: ${FFMPEG_LDFLAGS}")
 
   include_directories(${FFMPEG_INCLUDE_DIRS})
-  list(APPEND PCC_CXX_FLAGS ${FFMPEG_CXX_FLAGS})
-  list(APPEND PCC_LINKER_FLAGS ${FFMPEG_LDFLAGS})
+  list(APPEND FLICR_CXX_FLAGS ${FFMPEG_CXX_FLAGS})
+  list(APPEND FLICR_LINKER_FLAGS ${FFMPEG_LDFLAGS})
 endmacro()
 
 use_ffmpeg()

@@ -447,4 +447,4 @@ void RiConverter::calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
   printf("\tDistance absdiff: mean (%fm), stddev (%fm)\n", mean.at<double>(0), stddev.at<double>(0));
   printf("====================================\n");
 }
-
+*/

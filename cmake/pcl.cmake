@@ -10,8 +10,8 @@ macro(use_pcl)
 
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
-    list(APPEND PCC_CXX_FLAGS ${PCL_CFLAGS_OTHER})
-    list(APPEND PCC_LINKER_FLAGS ${PCL_LIBRARIES})
+    list(APPEND FLICR_CXX_FLAGS ${PCL_CFLAGS_OTHER})
+    list(APPEND FLICR_LINKER_FLAGS ${PCL_LIBRARIES})
   endif(PCL_FOUND)
 endmacro()
 
