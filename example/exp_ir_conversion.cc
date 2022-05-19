@@ -53,17 +53,15 @@ int main(int argc, char** argv) {
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string dataCategory  = config["data_cat"].as<std::string>();
 
-  int riRow, riCol;
-  int numScans = 100;
-
-  riRow = (int)(HDL64_VERTICAL_DEGREE   / HDL64_THETA_PRECISION);
-  riCol = (int)(HDL64_HORIZONTAL_DEGREE / HDL64_PI_PRECISION_4500);
-
   std::shared_ptr<spdlog::logger> pc2ri     = spdlog::basic_logger_st("ri_logger", "ir_logs/ri.log");
   std::shared_ptr<spdlog::logger> pc2rinp   = spdlog::basic_logger_st("rinp_logger", "ir_logs/ri_np.log");
   std::shared_ptr<spdlog::logger> pc2octree = spdlog::basic_logger_st("octree_logger", "ir_logs/octree.log");
   std::shared_ptr<spdlog::logger> pc2kdtree = spdlog::basic_logger_st("kdtree_logger", "ir_logs/kdtree.log");
   std::shared_ptr<spdlog::logger> pc2mesh   = spdlog::basic_logger_st("mesh_logger", "ir_logs/mesh.log");
+
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
+  debug_print("# of scans: %d", numScans);
+  numScans = 100;
 
   std::ostringstream os;
   PcReader pcReader;

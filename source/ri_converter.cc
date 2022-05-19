@@ -61,14 +61,18 @@ void RiConverter::RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float
   float nTheta = (thetaRow * thetaPrecision);
   float nPi    = (piCol * piPrecision);
 
-  float theta = nTheta - thetaDegreeOffset;
-  float pi    = nPi    - piDegreeOffset;
+  float theta = (thetaRow * thetaPrecision) - thetaDegreeOffset;
+  float pi    = (piCol    * piPrecision)    - piDegreeOffset;
 
   float rTheta = DEGREE2RAD(theta);
   float rPi    = DEGREE2RAD(pi);
   */
-  float rTheta = DEGREE2RAD( (thetaRow*thetaPrecision)-thetaDegreeOffset );
-  float rPi    = DEGREE2RAD( (piCol*piPrecision)-piDegreeOffset );
+
+  float dTheta = (thetaRow * thetaPrecision) - thetaDegreeOffset;
+  float dPi    = (piCol    * piPrecision)    - piDegreeOffset;
+
+  float rTheta = DEGREE2RAD(dTheta);
+  float rPi    = DEGREE2RAD(dPi);
 
   x = rho * std::sin(rTheta) * std::cos(rPi);
   y = rho * std::sin(rTheta) * std::sin(rPi);

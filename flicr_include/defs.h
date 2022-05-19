@@ -48,3 +48,32 @@ static void printProgress(double percentage) {
     fflush(stdout);
 }
 
+
+#include <dirent.h>
+static int countFilesInDirectory(const char *dirName)
+{
+  int numScans = 0;
+
+  DIR *dir = opendir(dirName);
+  if(dir == NULL)
+  {
+    debug_print("invalide lidarDataPath in config.yaml");
+    return 0;
+  }
+  else
+  {
+    struct dirent *ent;
+    while(ent = readdir(dir))
+    {
+      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
+      else
+      {
+        numScans++;
+      }
+    }
+  }
+  closedir(dir);
+
+  return numScans;
+}
+

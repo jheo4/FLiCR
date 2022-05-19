@@ -8,7 +8,7 @@
 #include "./flicr_include/defs.h"
 #include "./flicr_include/types.h"
 
-#include "./flicr_include/metric_func.h"
+#include "./flicr_include/metrics_func.h"
 
 #include "./flicr_include/pc_reader.h"
 #include "./flicr_include/pc_writer.h"

@@ -10,8 +10,10 @@
 
 namespace flicr
 {
-class Metric
+class Metrics
 {
+  public:
+
   /******************************************  Point Cloud Metrics  **************************************************/
   static float getNearestDistanceFromKdtreeToPoint(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt)
   {
