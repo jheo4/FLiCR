@@ -419,7 +419,6 @@ void RiConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat form
 }
 
 
-
 /*
 float RiConverter::calcRiQuantError(types::PclPcXyz pc, cv::Mat *ri)
 {
@@ -449,59 +448,3 @@ void RiConverter::calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
   printf("====================================\n");
 }
 
-
-float RiConverter::calcNearestDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt)
-{
-  const int k = 1;
-  std::vector<int> indices(k);
-  std::vector<float> sqrDist(k);
-  tree.nearestKSearch(pt, k, indices, sqrDist);
-
-  return sqrDist[0];
-}
-
-
-float RiConverter::calcPcAvgDistance(types::PclPcXyz pc1, types::PclPcXyz pc2, float thresh)
-{
-  int outliers = 0;
-  pcl::search::KdTree<pcl::PointXYZ> kdTree;
-  kdTree.setInputCloud(pc1);
-
-  auto sum = std::accumulate(pc2->begin(), pc2->end(), 0.0f,
-                             [&](float currentSum, const pcl::PointXYZ& pt)
-                             {
-                               const auto dist = calcNearestDistance(kdTree, pt);
-                               if(dist < thresh)
-                               {
-                                 return currentSum + dist;
-                               }
-                               else
-                               {
-                                 outliers++;
-                                 return currentSum;
-                               }
-                              }
-                            );
-
-  return sum / (pc2->size() - outliers);
-}
-
-
-void RiConverter::calcE2eDistance(types::PclPcXyz pc1, types::PclPcXyz pc2, float thresh)
-{
-  const auto avgDist12 = calcPcAvgDistance(pc1, pc2, thresh);
-  const auto avgDist21 = calcPcAvgDistance(pc2, pc1, thresh);
-
-  float dist = (avgDist21 * 0.5f) + (avgDist12 * 0.5f);
-
-  printf("========= calcE2eDistance =======\n");
-  printf("\tDistance btw 2 pcs: %f\n", dist);
-  printf("====================================\n");
-}
-
-
-void RiConverter::calcE2eDistance(types::PclPcXyz pc, double riMax, cv::Mat *nRi)
-{
-
-}
-*/

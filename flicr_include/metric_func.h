@@ -12,8 +12,8 @@ namespace flicr
 {
 class Metric
 {
-  // Point Cloud Metrics
-  static float getDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt)
+  /******************************************  Point Cloud Metrics  **************************************************/
+  static float getNearestDistanceFromKdtreeToPoint(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt)
   {
     const int k = 1;
     std::vector<int> indices(k);
@@ -24,7 +24,7 @@ class Metric
   }
 
 
-  static float getMSE(types::PclPcXyz pc1, types::PclPcXyz pc2, float distThresh = std::numeric_limits<float>::max())
+  static float getMseBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2, float distThresh = std::numeric_limits<float>::max())
   {
     int outliers = 0;
     pcl::search::KdTree<pcl::PointXYZ> kdTree;
@@ -33,7 +33,7 @@ class Metric
     float sqrdSum = std::accumulate(pc2->begin(), pc2->end(), 0.0f,
                                     [&](float currentSum, const pcl::PointXYZ& pt)
                                     {
-                                      float dist = getDistance(kdTree, pt);
+                                      float dist = getNearestDistanceFromKdtreeToPoint(kdTree, pt);
                                       if(dist < distThresh)
                                       {
                                         return currentSum + dist;
@@ -51,25 +51,25 @@ class Metric
   }
 
 
-  static float calcPSNR(types::PclPcXyz pc1, types::PclPcXyz pc2, float pcMax)
+  static float calcPsnrBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2, float pcMax)
   {
-    float MSE  = getMSE(pc1, pc2, pcMax);
+    float MSE  = getMseBtwPcs(pc1, pc2, pcMax);
     float PSNR = 10*log10(pow(pcMax, 2)/MSE);
 
     return PSNR;
   }
 
 
-  static float calcCD(types::PclPcXyz pc1, types::PclPcXyz pc2)
+  static float calcCdBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2)
   {
-    float pc12 = getMSE(pc1, pc2);
-    float pc21 = getMSE(pc2, pc1);
+    float pc12 = getMseBtwPcs(pc1, pc2);
+    float pc21 = getMseBtwPcs(pc2, pc1);
 
     return pc12+pc21;
   }
 
 
-  static float calcSamplingError(types::PclPcXyz pc1, types::PclPcXyz pc2)
+  static float calcPoinNumDiffBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2)
   {
     int pc1Size = pc1->size();
     int pc2Size = pc2->size();
@@ -78,7 +78,7 @@ class Metric
   }
 
 
-  // Image Metrics
+  /***********************************************  Image Metrics  ***************************************************/
   static double getImgPSNR(const cv::Mat& ri1, const cv::Mat& ri2, float riMax)
   {
     cv::Mat s1;

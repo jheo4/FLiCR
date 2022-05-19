@@ -59,19 +59,6 @@ class RiConverter
 
     enum FileFormat {PNG, PPM};
     void saveRiToFile(cv::Mat ri, std::string fileName, FileFormat format = PNG);
-
-
-    // need to be removed..
-    /*
-    float calcRiQuantError(types::PclPcXyz pc, cv::Mat *ri);
-    void calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi);
-
-    float calcNearestDistance(const pcl::search::KdTree<pcl::PointXYZ> &tree, const pcl::PointXYZ &pt);
-    float calcPcAvgDistance(types::PclPcXyz pc1, types::PclPcXyz pc2, float thresh);
-
-    void calcE2eDistance(types::PclPcXyz pc1, types::PclPcXyz pc2, float thresh = std::numeric_limits<float>::max());
-    void calcE2eDistance(types::PclPcXyz pc, double riMax, cv::Mat *nRi);
-    */
 };
 }
 
