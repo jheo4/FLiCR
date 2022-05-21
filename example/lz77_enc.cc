@@ -3,8 +3,8 @@
 using namespace std;
 using namespace flicr;
 
-// Encode raw point cloud with RLE
-// ./rle_enc orig.bin encoded.bin
+// Encode raw point cloud with LZ77
+// ./rawpc_dict_encode orig.bin encoded.bin
 int main(int argc, char* argv[]) {
   double st, et;
 
@@ -36,13 +36,15 @@ int main(int argc, char* argv[]) {
   readCount = fread(readBuf, sizeof(float), int(readBufSize/4), ifp);
   size = readCount * 4;
 
-  RunLengthCompressor rlec;
+  BoostZip boostZip;
+  std::vector<char> dictRes;
+
   st = getTsNow();
-  std::vector<char> rleRes = rlec.encode((char*)readBuf, size);
+  boostZip.deflateGzip((char*)readBuf, size, dictRes);
   et = getTsNow();
 
   // save file to bin
-  fwrite(rleRes.data(), sizeof(char), rleRes.size(), ofp);
+  fwrite(dictRes.data(), sizeof(char), dictRes.size(), ofp);
   debug_print("# of pints: %d, total size: %d, exe: %f", readCount, size, et-st);
 
   fclose(ifp);

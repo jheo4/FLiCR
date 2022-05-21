@@ -1,9 +1,10 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
 
+// Convert point cloud: XYZI.bin to XYZ.bin
+// ./xyzi2xyz xyzi.bin xyz.bin
 int main(int argc, char* argv[]) {
-  // ./xyzi2xyz xyzi.bin xyz.bin
 
   if(argc != 3) exit(1);
   std::string input  = argv[1];
@@ -19,10 +20,11 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  PcReader reader;
-  PcWriter writer;
-  PclPcXYZ pc = reader.readXyzFromXyziBin(input);
+  flicr::PcReader reader;
+  flicr::PcWriter writer;
+  flicr::types::PclPcXyz pc = reader.readXyzFromXyziBin(input);
   writer.writeBin(output, pc);
+
   fclose(ofp);
 
   return 0;

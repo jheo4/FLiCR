@@ -1,5 +1,3 @@
-
-
 macro(use_openmp)
   find_package(OpenMP)
   if (OPENMP_FOUND)

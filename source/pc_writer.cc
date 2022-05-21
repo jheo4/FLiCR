@@ -1,15 +1,10 @@
 #include "pcl/io/pcd_io.h"
 #include <pc_writer.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <utils.h>
 
+using namespace flicr;
 
-PcWriter::PcWriter()
-{
-}
-
-
-void PcWriter::writeBin(std::string fileName, PclPcXYZ pc)
+void PcWriter::writeBin(std::string fileName, types::PclPcXyz pc)
 {
   std::ofstream outStream(fileName, std::ofstream::binary);
 
@@ -26,7 +21,7 @@ void PcWriter::writeBin(std::string fileName, PclPcXYZ pc)
 }
 
 
-void PcWriter::writeBin(std::string fileName, PclPcXYZI pc)
+void PcWriter::writeBin(std::string fileName, types::PclPcXyzi pc)
 {
   std::ofstream outStream(fileName, std::ofstream::binary);
 
@@ -45,7 +40,7 @@ void PcWriter::writeBin(std::string fileName, PclPcXYZI pc)
 }
 
 
-void PcWriter::writePcd(std::string fileName, PclPcXYZ pc, bool compress)
+void PcWriter::writePcd(std::string fileName, types::PclPcXyz pc, bool compress)
 {
   if(compress)
     pcl::io::savePCDFileBinaryCompressed(fileName, *pc);
@@ -54,7 +49,7 @@ void PcWriter::writePcd(std::string fileName, PclPcXYZ pc, bool compress)
 }
 
 
-void PcWriter::writePcd(std::string fileName, PclPcXYZI pc, bool compress)
+void PcWriter::writePcd(std::string fileName, types::PclPcXyzi pc, bool compress)
 {
   if(compress)
     pcl::io::savePCDFileBinaryCompressed(fileName, *pc);
@@ -63,13 +58,13 @@ void PcWriter::writePcd(std::string fileName, PclPcXYZI pc, bool compress)
 }
 
 
-void PcWriter::writePly(std::string fileName, PclPcXYZ pc)
+void PcWriter::writePly(std::string fileName, types::PclPcXyz pc)
 {
   pcl::io::savePLYFile(fileName, *pc);
 }
 
 
-void PcWriter::writePly(std::string fileName, PclPcXYZI pc)
+void PcWriter::writePly(std::string fileName, types::PclPcXyzi pc)
 {
   pcl::io::savePLYFile(fileName, *pc);
 }

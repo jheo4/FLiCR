@@ -1,4 +1,4 @@
-# 3D_PCC
+# FLiCR: A Fast and Lightweight LiDAR Point Cloud Compression Based on Lossy RI
 
 ## Installation
 This project is on Linux and tested with ubuntu 18.04 and 20.04. You can get a container of the environmental setup

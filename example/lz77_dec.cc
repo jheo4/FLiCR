@@ -3,8 +3,8 @@
 using namespace std;
 using namespace flicr;
 
-// Encode raw point cloud with RLE
-// ./rle_enc orig.bin encoded.bin
+// Decode encoded point cloud with LZ77
+// ./rawpc_dict_decode orig.bin encoded.bin
 int main(int argc, char* argv[]) {
   double st, et;
 
@@ -14,7 +14,6 @@ int main(int argc, char* argv[]) {
 
   cout << input << endl;
   cout << output << endl;
-
 
   FILE* ifp = fopen(input.c_str(), "rb");
   if(ifp == NULL)
@@ -30,20 +29,23 @@ int main(int argc, char* argv[]) {
   }
 
   uint32_t readBufSize = 4800000;
-  float *readBuf = new float[readBufSize];
-  uint32_t readCount, size;
+  char *readBuf = new char[readBufSize];
+  uint32_t encodedSize;
 
-  readCount = fread(readBuf, sizeof(float), int(readBufSize/4), ifp);
-  size = readCount * 4;
+  encodedSize = fread(readBuf, sizeof(char), readBufSize, ifp);
 
-  RunLengthCompressor rlec;
+  BoostZip boostzip;
+
+  std::vector<char> encoded(readBuf, readBuf + encodedSize);
+  std::vector<char> decoded;
+
   st = getTsNow();
-  std::vector<char> rleRes = rlec.encode((char*)readBuf, size);
+  boostzip.inflateGzip(encoded, decoded);
   et = getTsNow();
 
   // save file to bin
-  fwrite(rleRes.data(), sizeof(char), rleRes.size(), ofp);
-  debug_print("# of pints: %d, total size: %d, exe: %f", readCount, size, et-st);
+  fwrite(decoded.data(), sizeof(char), decoded.size(), ofp);
+  debug_print("encodedSize: %d, exe: %f", encodedSize, et-st);
 
   fclose(ifp);
   fclose(ofp);

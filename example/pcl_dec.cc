@@ -1,4 +1,4 @@
-#include <3dpcc>
+#include <flicr>
 #include <bits/stdc++.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -7,10 +7,12 @@
 #include <pcl/compression/compression_profiles.h>
 
 using namespace std;
+using namespace flicr;
 
+// Decode encoded point cloud with PCL's octree compressor
+// ./pcl_dec encoded.bin decoded.bin
 int main(int argc, char* argv[]) {
-  // ./rle_enc orig.bin encoded.bin
-  // ./rle_dec orig.bin encoded.bin decoded.bin
+
   double st, et;
 
   if(argc != 3) exit(1);
@@ -28,7 +30,7 @@ int main(int argc, char* argv[]) {
 
   PcWriter pcWriter;
   std::stringstream encoded;
-  PclPcXYZ decoded(new pcl::PointCloud<PclXYZ>());
+  types::PclPcXyz decoded(new pcl::PointCloud<types::PclXyz>());
 
   inf >> encoded.rdbuf();
 

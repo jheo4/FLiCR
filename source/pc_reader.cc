@@ -1,12 +1,13 @@
 #include <pc_reader.h>
-#include <utils.h>
+
+using namespace flicr;
 
 PcReader::PcReader()
 {
 }
 
 
-RawPc PcReader::rawReadXyzBin(std::string fileName)
+types::RawPc PcReader::rawReadXyzBin(std::string fileName)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");
   if(fp == nullptr)
@@ -16,7 +17,7 @@ RawPc PcReader::rawReadXyzBin(std::string fileName)
   }
 
   uint32_t readBufSize = 4800000;
-  RawPc pc;
+  types::RawPc pc;
   pc.buf = new float[readBufSize];
   pc.numOfPoints = fread(pc.buf, sizeof(float), int(readBufSize/4), fp);
   pc.numOfPoints = pc.numOfPoints/3;
@@ -25,12 +26,12 @@ RawPc PcReader::rawReadXyzBin(std::string fileName)
 }
 
 
-PclPcXYZ PcReader::readXyzBin(std::string fileName)
+types::PclPcXyz PcReader::readXyzBin(std::string fileName)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");
   if(fp == nullptr) return nullptr;
 
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
+  types::PclPcXyz pc(new pcl::PointCloud<types::PclXyz>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -46,7 +47,7 @@ PclPcXYZ PcReader::readXyzBin(std::string fileName)
     readCount = fread(readBuf, sizeof(float), readBufSize/sizeof(float), fp);
     for(int i = 0; i < int(readCount/3); i++)
     {
-      PclXYZ p(std::move(*x), std::move(*y), std::move(*z));
+      types::PclXyz p(std::move(*x), std::move(*y), std::move(*z));
       pc->points.push_back(p);
       x+=3; y+=3; z+=3;
     }
@@ -59,12 +60,12 @@ PclPcXYZ PcReader::readXyzBin(std::string fileName)
 }
 
 
-PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
+types::PclPcXyz PcReader::readXyzFromXyziBin(std::string fileName)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");
   if(fp == nullptr) return nullptr;
 
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
+  types::PclPcXyz pc(new pcl::PointCloud<types::PclXyz>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -82,7 +83,7 @@ PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
     //debug_print("ReadCount: %d", readCount/4);
     for(int i = 0; i < int(readCount/4); i++)
     {
-      PclXYZ p;
+      types::PclXyz p;
       p.x         = std::move(*x);
       p.y         = std::move(*y);
       p.z         = std::move(*z);
@@ -99,12 +100,12 @@ PclPcXYZ PcReader::readXyzFromXyziBin(std::string fileName)
 }
 
 
-PclPcXYZI PcReader::readXyziBin(std::string fileName)
+types::PclPcXyzi PcReader::readXyziBin(std::string fileName)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");
   if(fp == nullptr) return nullptr;
 
-  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
+  types::PclPcXyzi pc(new pcl::PointCloud<types::PclXyzi>);
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
 
@@ -122,7 +123,7 @@ PclPcXYZI PcReader::readXyziBin(std::string fileName)
     //debug_print("ReadCount: %d", readCount);
     for(int i = 0; i < int(readCount/4); i++)
     {
-      PclXYZI p;
+      types::PclXyzi p;
       p.x         = std::move(*x);
       p.y         = std::move(*y);
       p.z         = std::move(*z);
@@ -140,12 +141,12 @@ PclPcXYZI PcReader::readXyziBin(std::string fileName)
 }
 
 
-bool PcReader::readXyzInt(std::string fileName, PclPcXYZ &pc, std::vector<float> &intensity)
+bool PcReader::readXyzInt(std::string fileName, types::PclPcXyz &pc, std::vector<float> &intensity)
 {
   FILE* fp = fopen(fileName.c_str(), "rb");
   if(fp == nullptr) return false;
 
-  pc = PclPcXYZ(new pcl::PointCloud<PclXYZ>);
+  pc = types::PclPcXyz(new pcl::PointCloud<types::PclXyz>);
 
   uint32_t readBufSize = 4800000;
   float *readBuf = (float*)malloc(readBufSize);
@@ -162,7 +163,7 @@ bool PcReader::readXyzInt(std::string fileName, PclPcXYZ &pc, std::vector<float>
     readCount = fread(readBuf, sizeof(float), int(readBufSize/4), fp);
     for(int i = 0; i < int(readCount/4); i++)
     {
-      PclXYZ p;
+      types::PclXyz p;
       p.x         = std::move(*x);
       p.y         = std::move(*y);
       p.z         = std::move(*z);
@@ -181,52 +182,52 @@ bool PcReader::readXyzInt(std::string fileName, PclPcXYZ &pc, std::vector<float>
 }
 
 
-PclPcXYZ PcReader::readXyzPcd(std::string fileName)
+types::PclPcXyz PcReader::readXyzPcd(std::string fileName)
 {
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
+  types::PclPcXyz pc(new pcl::PointCloud<types::PclXyz>);
   pcl::io::loadPCDFile(fileName, *pc);
   return pc;
 }
 
 
-PclPcXYZI PcReader::readXyziPcd(std::string fileName)
+types::PclPcXyzi PcReader::readXyziPcd(std::string fileName)
 {
-  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
+  types::PclPcXyzi pc(new pcl::PointCloud<types::PclXyzi>);
   pcl::io::loadPCDFile(fileName, *pc);
   return pc;
 }
 
 
-PclPcXYZ PcReader::readXyzPly(std::string fileName)
+types::PclPcXyz PcReader::readXyzPly(std::string fileName)
 {
-  PclPcXYZ pc(new pcl::PointCloud<PclXYZ>);
+  types::PclPcXyz pc(new pcl::PointCloud<types::PclXyz>);
   pcl::io::loadPLYFile(fileName, *pc);
   return pc;
 }
 
 
-PclPcXYZI PcReader::readXyziPly(std::string fileName)
+types::PclPcXyzi PcReader::readXyziPly(std::string fileName)
 {
-  PclPcXYZI pc(new pcl::PointCloud<PclXYZI>);
+  types::PclPcXyzi pc(new pcl::PointCloud<types::PclXyzi>);
   pcl::io::loadPLYFile(fileName, *pc);
   return pc;
 }
 
 
-PclMesh PcReader::readMeshPly(std::string fileName)
+types::PclMesh PcReader::readMeshPly(std::string fileName)
 {
-  PclMesh mesh(new pcl::PolygonMesh);
+  types::PclMesh mesh(new pcl::PolygonMesh);
   pcl::io::loadPLYFile(fileName, *mesh);
   return mesh;
 }
 
 
-void PcReader::generateMeshFromXyz(PclPcXYZ pc, pcl::PolygonMeshPtr &mesh,
+void PcReader::generateMeshFromXyz(types::PclPcXyz pc, pcl::PolygonMeshPtr &mesh,
                                    std::vector<int> partID, std::vector<int> pointStates)
 {
-  pcl::NormalEstimation<PclXYZ, pcl::Normal> normEstimation;
+  pcl::NormalEstimation<types::PclXyz, pcl::Normal> normEstimation;
   pcl::PointCloud<pcl::Normal>::Ptr norms(new pcl::PointCloud<pcl::Normal>);
-  pcl::search::KdTree<PclXYZ>::Ptr kdTreeXyz(new pcl::search::KdTree<PclXYZ>);
+  pcl::search::KdTree<types::PclXyz>::Ptr kdTreeXyz(new pcl::search::KdTree<types::PclXyz>);
 
   // Get normal
   kdTreeXyz->setInputCloud(pc);

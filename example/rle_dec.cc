@@ -1,10 +1,11 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
+// Decode point cloud encoded by RLE
+// ./rle_dec orig.bin encoded.bin decoded.bin
 int main(int argc, char* argv[]) {
-  // ./rle_enc orig.bin encoded.bin
-  // ./rle_dec orig.bin encoded.bin decoded.bin
   double st, et;
 
   if(argc != 4) exit(1);

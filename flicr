@@ -1,0 +1,22 @@
+#include <bits/stdc++.h>
+#include <yaml-cpp/yaml.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
+#include "./flicr_include/third_party/cxxopts.hpp"
+
+#include "./flicr_include/defs.h"
+#include "./flicr_include/types.h"
+
+#include "./flicr_include/metrics_func.h"
+
+#include "./flicr_include/pc_reader.h"
+#include "./flicr_include/pc_writer.h"
+#include "./flicr_include/visualizer.h"
+#include "./flicr_include/ri_converter.h"
+
+#include "./flicr_include/compressor/encoder.h"
+#include "./flicr_include/compressor/decoder.h"
+#include "./flicr_include/compressor/boostzip.h"
+#include "./flicr_include/compressor/runlength_compressor.h"
+

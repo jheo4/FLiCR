@@ -169,3 +169,5 @@ python/venv
 python/data
 *.png
 *.gif
+
+bin/

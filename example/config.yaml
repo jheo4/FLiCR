@@ -1,0 +1,54 @@
+kitti_bag_file: "/home/jin/mnt/Data/kitti_2011_09_26_drive_0002_synced.bag"
+kitti_left_mono_info_topic: "/kitti/camera_gray_left/camera_info"   # sensor_msgs/CameraInfo
+kitti_left_mono_image_topic: "/kitti/camera_gray_left/camera_raw"   # sensor_msgs/Image
+kitti_left_col_info_topic: "/kitti/camera_color_left/camera_info"   # sensor_msgs/CameraInfo
+kitti_left_col_image_topic: "/kitti/camera_color_left/image_raw"    # sensor_msgs/Image
+
+kitti_right_mono_info_topic: "/kitti/camera_gray_right/camera_info" # sensor_msgs/CameraInfo
+kitti_right_mono_image_topic: "/kitti/camera_gray_right/camera_raw" # sensor_msgs/Image
+kitti_right_col_info_topic: "/kitti/camera_color_right/camera_info" # sensor_msgs/CameraInfo
+kitti_right_col_image_topic: "/kitti/camera_color_right/image_raw"  # sensor_msgs/Image
+
+kitti_velodyne_topic: "/kitti/velo/pointcloud" # sensor_msgs/PointCloud2
+kitti_imu_topic: "/kitti/oxts/imu" # sensor_msgs/Imu
+kitti_gps_topic: "/kitti/oxts/gps/vel" # sensor_msgs/Imu
+
+kitti_raw_dir: "/home/jin/mnt/Data/kitti/2011_09_26_drive_0059_sync/2011_09_26/2011_09_26_drive_0059_sync"
+kitti_raw_lidar: "/home/jin/mnt/Data/kitti/2011_09_26_drive_0059_sync/2011_09_26/2011_09_26_drive_0059_sync/velodyne_points/data"
+kitti_xyz_ply: "/home/jin/mnt/Data/kitti/xyz_ply"
+kitti_xyzi_ply: "/home/jin/mnt/Data/kitti/xyzi_ply"
+kitti_mesh_ply: "/home/jin/mnt/Data/kitti/mesh_ply"
+
+l515_bag_file: "/home/jin/mnt/Data/l515-test.bag"
+l515_col_image_topic: "/L515/color/image_raw"    # sensor_msgs/Image
+l515_dep_point_topic: "/L515/depth/color/points" # sensor_msgs/PointCloud2
+l515_imu_topic: "/L515/imu"                      # sensor_msgs/Imu
+
+d435i_bag_file: "/home/jin/mnt/Data/d435i_walking.bag"
+d435i_col_image_topic: "/device_0/sensor_1/Color_0/image/data"   # sensor_msgs/Image
+d435i_depth_image_topic: "/device_0/sensor_0/Depth_0/image/data" # sensor_msgs/Image
+
+
+
+lidar_data  : "/home/jin/mnt/Data/kitti/City/2011_09_26_drive_0051_sync/2011_09_26/2011_09_26_drive_0051_sync/velodyne_points/data"
+data_cat    : "kitti_city"
+ply_path    : "/home/jin/mnt/Data/kitti/City/2011_09_26_drive_0051_sync/2011_09_26/2011_09_26_drive_0051_sync/velodyne_points/ply"
+metric_data : "/home/jin/mnt/Data/kitti/City"
+# lidar_data: "/home/jin/mnt/Data/kitti/Campus/2011_09_28_drive_0038_sync/2011_09_28/2011_09_28_drive_0038_sync/velodyne_points/data"
+# data_cat  : "kitti_campus"
+
+# lidar_data: "/home/jin/mnt/Data/kitti/Residential/2011_09_26_drive_0023_sync/2011_09_26/2011_09_26_drive_0023_sync/velodyne_points/data"
+# data_cat  : "kitti_residential"
+
+# lidar_data: "/home/jin/mnt/Data/kitti/Road/2011_09_26_drive_0015_sync/2011_09_26/2011_09_26_drive_0015_sync/velodyne_points/data"
+# data_cat  : "kitti_road"
+
+# Encoders: mjpeg libx264 h264_nvenc libx265 hevc_nvenc(NA)
+# Decoders: mjpeg h264    h264_cuvid hevc    hevc_cuvid(NA)
+enc: "libx264"
+dec: "h264"
+qp : -1
+crf: 0
+br : 4000000
+fps: 30
+

@@ -8,9 +8,9 @@ foreach(EXAMPLE_SRC ${EXAMPLE_SRCS})
   target_include_directories(${EXAMPLE_NAME} PUBLIC
                             "${PROJECT_SOURCE_DIR}/include")
 
-  target_compile_options(${EXAMPLE_NAME} PUBLIC ${PCC_CXX_FLAGS})
-  target_link_libraries(${EXAMPLE_NAME} ${PCC_LINKER_FLAGS})
-  target_link_libraries(${EXAMPLE_NAME} ${PCC_LINKER_LIBS})
-  target_link_libraries(${EXAMPLE_NAME} pcc)
+  target_compile_options(${EXAMPLE_NAME} PUBLIC ${FLICR_CXX_FLAGS})
+  target_link_libraries(${EXAMPLE_NAME} ${FLICR_LINKER_FLAGS})
+  target_link_libraries(${EXAMPLE_NAME} ${FLICR_LINKER_LIBS})
+  target_link_libraries(${EXAMPLE_NAME} flicr)
 endforeach(EXAMPLE_SRC ${EXAMPLE_SRCS})
 

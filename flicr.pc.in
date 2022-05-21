@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: FLiCR
+Description: A Fast and Lightweight LiDAR Point Cloud Compression Based on Lossy RI
+URL: https://github.com/jheo4/flicr
+Version: 1.0
+
+Requires:
+Cflags:  -std=c++14 -I${includedir} -I${includedir}/flexrinc @FLICR_CXX_FLAGS@ @FLICR_INCLUDE_DIRS@
+Libs:  -L${libdir} -lflicr @FLICR_LINKER_FLAGS@ @FLICR_LINKER_FLAGS@
