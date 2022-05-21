@@ -1,46 +1,45 @@
-#include <3dpcc>
+#include <flicr>
 #include <pcl_conversions/pcl_conversions.h>
 
 using namespace std;
+using namespace flicr;
 
-int main() {
+int main(int argc, char **argv) {
+  cxxopts::Options options("FLiCR", "FLiCR");
+  options.add_options()
+    ("y, yaml", "YAML file", cxxopts::value<std::string>())
+    ("h, help", "Print usage")
+    ;
+
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
+  {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
+
+  std::string yamlConfig;
+  if(parsedArgs.count("yaml"))
+  {
+    yamlConfig = parsedArgs["yaml"].as<std::string>();
+    std::cout << "YAML Config: " << yamlConfig << std::endl;
+  }
+  else
+  {
+    std::cout << "Invalid YAML Config" << std::endl;
+    exit(0);
+  }
+
   double st, et;
 
-  std::string pccHome = getenv("PCC_HOME");
-  if(pccHome.empty())
-  {
-    std::cout << "set PCC_HOME" << std::endl;
-    return 0;
-  }
-  std::string configYaml = pccHome + "/config.yaml";
-
-  YAML::Node config = YAML::LoadFile(configYaml);
+  YAML::Node config = YAML::LoadFile(yamlConfig);
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string metricData    = config["metric_data"].as<std::string>();
 
   std::ostringstream os;
   PcReader pcReader;
 
-  int numScans = 0;
-  DIR *dir = opendir(lidarDataPath.c_str());
-  if(dir == NULL)
-  {
-    debug_print("invalide lidarDataPath in config.yaml");
-    return 0;
-  }
-  else
-  {
-    struct dirent *ent;
-    while(ent = readdir(dir))
-    {
-      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
-      else
-      {
-        numScans++;
-      }
-    }
-  }
-  closedir(dir);
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
   numScans = 30;
   debug_print("# of scans: %d", numScans);
 
@@ -60,34 +59,34 @@ int main() {
     std::string tmc10cmFn   = metricData + "/tmc13/xyz/10cm/dec_xyz_" + os.str() + ".ply";
     os.str(""); os.clear();
 
-    PclPcXYZ original  = pcReader.readXyzFromXyziBin(fn);
-    PclPcXYZ dracoCl1  = pcReader.readXyzPly(dracoCl1Fn);
-    PclPcXYZ dracoCl10 = pcReader.readXyzPly(dracoCl10Fn);
-    PclPcXYZ rt2048    = pcReader.readXyzFromXyziBin(rt2048Fn);
-    PclPcXYZ rt4096    = pcReader.readXyzFromXyziBin(rt4096Fn);
-    PclPcXYZ tmc1cm    = pcReader.readXyzPly(tmc1cmFn);
-    PclPcXYZ tmc10cm   = pcReader.readXyzPly(tmc10cmFn);
+    types::PclPcXyz original  = pcReader.readXyzFromXyziBin(fn);
+    types::PclPcXyz dracoCl1  = pcReader.readXyzPly(dracoCl1Fn);
+    types::PclPcXyz dracoCl10 = pcReader.readXyzPly(dracoCl10Fn);
+    types::PclPcXyz rt2048    = pcReader.readXyzFromXyziBin(rt2048Fn);
+    types::PclPcXyz rt4096    = pcReader.readXyzFromXyziBin(rt4096Fn);
+    types::PclPcXyz tmc1cm    = pcReader.readXyzPly(tmc1cmFn);
+    types::PclPcXyz tmc10cm   = pcReader.readXyzPly(tmc10cmFn);
 
-    float dracoCl1PSNR  = calcPSNR(original, dracoCl1, 80);
-    float dracoCl10PSNR = calcPSNR(original, dracoCl10, 80);
-    float rt2048PSNR    = calcPSNR(original, rt2048, 80);
-    float rt4096PSNR    = calcPSNR(original, rt4096, 80);
-    float tmc1cmPSNR    = calcPSNR(original, tmc1cm, 80);
-    float tmc10cmPSNR   = calcPSNR(original, tmc10cm, 80);
+    float dracoCl1PSNR  = Metrics::calcPsnrBtwPcs(original, dracoCl1, 80);
+    float dracoCl10PSNR = Metrics::calcPsnrBtwPcs(original, dracoCl10, 80);
+    float rt2048PSNR    = Metrics::calcPsnrBtwPcs(original, rt2048, 80);
+    float rt4096PSNR    = Metrics::calcPsnrBtwPcs(original, rt4096, 80);
+    float tmc1cmPSNR    = Metrics::calcPsnrBtwPcs(original, tmc1cm, 80);
+    float tmc10cmPSNR   = Metrics::calcPsnrBtwPcs(original, tmc10cm, 80);
 
-    float dracoCl1CD    = calcCD(original, dracoCl1);
-    float dracoCl10CD   = calcCD(original, dracoCl10);
-    float rt2048CD      = calcCD(original, rt2048);
-    float rt4096CD      = calcCD(original, rt4096);
-    float tmc1cmCD      = calcCD(original, tmc1cm);
-    float tmc10cmCD     = calcCD(original, tmc10cm);
+    float dracoCl1CD    = Metrics::calcCdBtwPcs(original, dracoCl1);
+    float dracoCl10CD   = Metrics::calcCdBtwPcs(original, dracoCl10);
+    float rt2048CD      = Metrics::calcCdBtwPcs(original, rt2048);
+    float rt4096CD      = Metrics::calcCdBtwPcs(original, rt4096);
+    float tmc1cmCD      = Metrics::calcCdBtwPcs(original, tmc1cm);
+    float tmc10cmCD     = Metrics::calcCdBtwPcs(original, tmc10cm);
 
-    float dracoCl1SE    = calcSamplingError(original, dracoCl1);
-    float dracoCl10SE   = calcSamplingError(original, dracoCl10);
-    float rt2048SE      = calcSamplingError(original, rt2048);
-    float rt4096SE      = calcSamplingError(original, rt4096);
-    float tmc1cmSE      = calcSamplingError(original, tmc1cm);
-    float tmc10cmSE     = calcSamplingError(original, tmc10cm);
+    float dracoCl1SE    = Metrics::calcPoinNumDiffBtwPcs(original, dracoCl1);
+    float dracoCl10SE   = Metrics::calcPoinNumDiffBtwPcs(original, dracoCl10);
+    float rt2048SE      = Metrics::calcPoinNumDiffBtwPcs(original, rt2048);
+    float rt4096SE      = Metrics::calcPoinNumDiffBtwPcs(original, rt4096);
+    float tmc1cmSE      = Metrics::calcPoinNumDiffBtwPcs(original, tmc1cm);
+    float tmc10cmSE     = Metrics::calcPoinNumDiffBtwPcs(original, tmc10cm);
 
     gdracoCl1PSNR  += dracoCl1PSNR;
     gdracoCl10PSNR += dracoCl10PSNR;

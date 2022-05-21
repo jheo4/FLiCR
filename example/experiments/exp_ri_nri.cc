@@ -1,21 +1,37 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
-int main() {
-  double st, et;
-  int riRow = (int)(HDL64_VERTICAL_DEGREE   / HDL64_THETA_PRECISION);
-  int riCol = (int)(HDL64_HORIZONTAL_DEGREE / HDL64_PI_PRECISION);
+int main(int argc, char **argv) {
+  cxxopts::Options options("FLiCR", "FLiCR");
+  options.add_options()
+    ("y, yaml", "YAML file", cxxopts::value<std::string>())
+    ("h, help", "Print usage")
+    ;
 
-  std::string pccHome = getenv("PCC_HOME");
-  if(pccHome.empty())
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
   {
-    std::cout << "set PCC_HOME" << std::endl;
-    return 0;
+    std::cout << options.help() << std::endl;
+    exit(0);
   }
-  std::string configYaml = pccHome + "/config.yaml";
 
-  YAML::Node config = YAML::LoadFile(configYaml);
+  std::string yamlConfig;
+  if(parsedArgs.count("yaml"))
+  {
+    yamlConfig = parsedArgs["yaml"].as<std::string>();
+    std::cout << "YAML Config: " << yamlConfig << std::endl;
+  }
+  else
+  {
+    std::cout << "Invalid YAML Config" << std::endl;
+    exit(0);
+  }
+
+  double st, et;
+
+  YAML::Node config = YAML::LoadFile(yamlConfig);
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string dataCategory  = config["data_cat"].as<std::string>();
 
@@ -27,35 +43,15 @@ int main() {
 
   metricLogger->info("\tSamplingError\tpcPSNR\triPSNR\triSSIM\tnriSSIM");
 
-
   std::ostringstream os;
   PcReader pcReader;
-  HDL64RIConverter riConverter;
+  RiConverter riConverter;
   BoostZip boostZip;
 
   Visualizer visualizer;
-  visualizer.initViewerXYZ();
+  visualizer.initViewerXyz();
 
-  int numScans = 0;
-  DIR *dir = opendir(lidarDataPath.c_str());
-  if(dir == NULL)
-  {
-    debug_print("invalide lidarDataPath in config.yaml");
-    return 0;
-  }
-  else
-  {
-    struct dirent *ent;
-    while(ent = readdir(dir))
-    {
-      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
-      else
-      {
-        numScans++;
-      }
-    }
-  }
-  closedir(dir);
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
   debug_print("# of scans: %d", numScans);
 
   for(int idx = 0; idx < numScans; idx++)
@@ -64,18 +60,18 @@ int main() {
     std::string fn = lidarDataPath + "/" + os.str() + ".bin";
     os.str(""); os.clear();
 
-    PclPcXYZ pcXyz;
+    types::PclPcXyz pcXyz;
     std::vector<float> intensity;
     if(pcReader.readXyzInt(fn, pcXyz, intensity) == false) break;
 
     /* pc -> ri -> nRi -> yuv -> encoded bytes */
-    cv::Mat *ri;
+    cv::Mat ri;
     cv::Mat nRi;
     double riMax, riMin;
 
     st = getTsNow();
-    ri = riConverter.convertPc2Ri(pcXyz); // TODO: need to encode intensity also
-    riConverter.normalizeRi(ri, &nRi, &riMin, &riMax);
+    riConverter.convertPc2Ri(pcXyz, ri, true); // TODO: need to encode intensity also
+    riConverter.normalizeRi(ri, nRi, riMin, riMax);
     et = getTsNow();
     pc2nri->info("PC2nRI exe\t{}", et-st);
 
@@ -89,7 +85,7 @@ int main() {
 
     std::vector<char> decompressedNri;
     cv::Mat decRi, decNri;
-    PclPcXYZ decXyz;
+    types::PclPcXyz decXyz;
 
     /* encoded bytes -> dec_yuv -> dec_nRi -> dec_ri -> dec_pc */
     st = getTsNow();
@@ -99,18 +95,18 @@ int main() {
     decLogger->info("decoding exe\t{}", et-st);
 
     st = getTsNow();
-    riConverter.denormalizeRi(&decNri, riMax, &decRi);
-    decXyz = riConverter.reconstructPcFromRi(&decRi);
+    riConverter.denormalizeRi(decNri, riMin, riMax, decRi);
+    decXyz = riConverter.reconstructPcFromRi(decRi, true);
     et = getTsNow();
     nri2pc->info("nRI2PC exe\t{}", et-st);
 
 
     // metric logging
-    float samplingError = riConverter.calcRiQuantError(pcXyz, ri);
-    float PSNR = calcPSNR(pcXyz, decXyz, riMax);
-    float riPSNR = getImgPSNR(*ri, decRi, riMax);
-    float riMSSIM1 = getImgMSSIM(nRi, decNri);
-    float riMSSIM2 = getImgMSSIM(*ri, decRi);
+    float samplingError = Metrics::calcPoinNumDiffBtwPcs(pcXyz, decXyz);
+    float PSNR = Metrics::calcPsnrBtwPcs(pcXyz, decXyz, riMax);
+    float riPSNR = Metrics::getImgPSNR(ri, decRi, riMax);
+    float riMSSIM1 = Metrics::getImgMSSIM(nRi, decNri);
+    float riMSSIM2 = Metrics::getImgMSSIM(ri, decRi);
 
     metricLogger->info("\t{}\t{}\t{}\t{}\t{}", samplingError, PSNR, riPSNR, riMSSIM1, riMSSIM2);
 
@@ -121,10 +117,9 @@ int main() {
     decompressedNri.clear();
     decXyz->clear();
 
-    ri->release(); delete ri;
+    ri.release();
     pcXyz->clear();
     intensity.clear();
-
 
     printProgress((float)idx/(float)numScans);
   }

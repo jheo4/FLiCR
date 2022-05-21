@@ -1,9 +1,11 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
+// Encode raw point cloud with LZ77 and RI subsampling
+// ./lz77_ri_enc orig.bin encoded.bin 4096
 int main(int argc, char* argv[]) {
-  // ./qdict_enc orig.bin encoded.bin 4096
 
   if(argc != 4) exit(1);
   std::string input  = argv[1];
@@ -15,7 +17,7 @@ int main(int argc, char* argv[]) {
   cout << riRes << endl;
 
   PcReader pcReader;
-  PclPcXYZ pc;
+  types::PclPcXyz pc;
   FILE* ofp = fopen(output.c_str(), "wb");
   if(ofp == NULL)
   {
@@ -25,20 +27,20 @@ int main(int argc, char* argv[]) {
 
   pc = pcReader.readXyzFromXyziBin(input);
   double piPrec = 360.0/stof(riRes);
-  HDL64RIConverter converter(HDL64_THETA_PRECISION,
-                             piPrec,
-                             HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
-                             HDL64_HORIZONTAL_DEGREE_OFFSET/piPrec);
+  RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                          HDL64_THETA_PRECISION, piPrec,
+                          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
   for(int i = 0; i < 100; i++)
   {
-    cv::Mat *ri, nRi;
+    cv::Mat ri, nRi;
     double riMin, riMax;
     BoostZip boostZip;
     std::vector<char> dictRes;
 
-    ri = converter.convertPc2Ri(pc);
-    converter.normalizeRi(ri, &nRi, &riMin, &riMax);
+    riConverter.convertPc2Ri(pc, ri, true);
+    riConverter.normalizeRi(ri, nRi, riMin, riMax);
     boostZip.deflateGzip((char*)nRi.data, nRi.elemSize()*nRi.total(), dictRes);
 
     // save file to bin

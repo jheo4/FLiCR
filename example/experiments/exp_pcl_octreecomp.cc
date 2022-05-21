@@ -1,4 +1,4 @@
-#include <3dpcc>
+#include <flicr>
 #include <bits/stdc++.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -7,21 +7,37 @@
 #include <pcl/compression/compression_profiles.h>
 
 using namespace std;
+using namespace flicr;
 
-int main() {
-  // for profiling
+int main(int argc, char **argv) {
+  cxxopts::Options options("FLiCR", "FLiCR");
+  options.add_options()
+    ("y, yaml", "YAML file", cxxopts::value<std::string>())
+    ("h, help", "Print usage")
+    ;
+
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
+  {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
+
+  std::string yamlConfig;
+  if(parsedArgs.count("yaml"))
+  {
+    yamlConfig = parsedArgs["yaml"].as<std::string>();
+    std::cout << "YAML Config: " << yamlConfig << std::endl;
+  }
+  else
+  {
+    std::cout << "Invalid YAML Config" << std::endl;
+    exit(0);
+  }
+
   double st, et;
 
-  /* Set configs from yaml */
-  std::string pccHome = getenv("PCC_HOME");
-  if(pccHome.empty()) {
-    std::cout << "set PCC_HOME" << std::endl;
-    return 0;
-  }
-  std::string configYaml = pccHome + "/config.yaml";
-  std::cout << "3D PCC config.yaml: " << configYaml << std::endl;
-
-  YAML::Node config         = YAML::LoadFile(configYaml);
+  YAML::Node config = YAML::LoadFile(yamlConfig);
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string dataCategory  = config["data_cat"].as<std::string>();
 
@@ -35,26 +51,7 @@ int main() {
   std::shared_ptr<spdlog::logger> metricLogger = spdlog::basic_logger_st("metLogger", "logs/"+dataCategory+"/pcl_metric.log");
   metricLogger->info("\tSamplingError\tPSNR\tCD\tencTime\tdecTime\tcompSize");
 
-  int numScans = 0;
-  DIR *dir = opendir(lidarDataPath.c_str());
-  if(dir == NULL)
-  {
-    debug_print("invalide lidarDataPath in config.yaml");
-    return 0;
-  }
-  else
-  {
-    struct dirent *ent;
-    while(ent = readdir(dir))
-    {
-      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
-      else
-      {
-        numScans++;
-      }
-    }
-  }
-  closedir(dir);
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
   debug_print("# of scans: %d", numScans);
   numScans = 100;
 
@@ -67,7 +64,7 @@ int main() {
     std::string fn = lidarDataPath + "/" + os.str() + ".bin";
     os.str(""); os.clear();
 
-    PclPcXYZ pcXyz, pcReconstructed(new pcl::PointCloud<PclXYZ>());
+    types::PclPcXyz pcXyz, pcReconstructed(new pcl::PointCloud<types::PclXyz>());
     std::vector<float> intensity;
     pcXyz = pcReader.readXyzFromXyziBin(fn);
 
@@ -85,9 +82,9 @@ int main() {
     compressedData.seekg(0, ios::end);
     compSize = compressedData.tellg();
 
-    float PSNR = calcPSNR(pcXyz, pcReconstructed, 80);
-    float CD   = calcCD(pcXyz, pcReconstructed);
-    float SE   = calcSamplingError(pcXyz, pcReconstructed);
+    float PSNR = Metrics::calcPsnrBtwPcs(pcXyz, pcReconstructed, 80);
+    float CD   = Metrics::calcCdBtwPcs(pcXyz, pcReconstructed);
+    float SE   = Metrics::calcPoinNumDiffBtwPcs(pcXyz, pcReconstructed);
 
     metricLogger->info("\t{}\t{}\t{}\t{}\t{}\t{}", SE, PSNR, CD, encTime, decTime, compSize);
 

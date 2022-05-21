@@ -1,27 +1,46 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
-
-int main() {
+int main(int argc, char** argv)
+{
   double st, et;
   int riRow, riCol;
 
-  std::string pccHome = getenv("PCC_HOME");
-  if(pccHome.empty())
-  {
-    std::cout << "set PCC_HOME" << std::endl;
-    return 0;
-  }
-  std::string configYaml = pccHome + "/config.yaml";
+  cxxopts::Options options("FLiCR", "FLiCR");
+  options.add_options()
+    ("y, yaml", "YAML file", cxxopts::value<std::string>())
+    ("h, help", "Print usage")
+    ;
 
-  YAML::Node config = YAML::LoadFile(configYaml);
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
+  {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
+
+  std::string yamlConfig;
+  if(parsedArgs.count("yaml"))
+  {
+    yamlConfig = parsedArgs["yaml"].as<std::string>();
+    std::cout << "YAML Config: " << yamlConfig << std::endl;
+  }
+  else
+  {
+    std::cout << "Invalid YAML Config" << std::endl;
+    exit(0);
+  }
+
+  YAML::Node config = YAML::LoadFile(yamlConfig);
   std::string lidarDataPath = config["lidar_data"].as<std::string>();
   std::string dataCategory  = config["data_cat"].as<std::string>();
 
   double riPrecisions[5] = {HDL64_PI_PRECISION_4096, HDL64_PI_PRECISION_2048, HDL64_PI_PRECISION_1024, HDL64_PI_PRECISION_512, HDL64_PI_PRECISION_256};
 
-  int numScans = 100;
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
+  numScans = 100;
 
   for(int i = 0; i < 5; i++)
   {
@@ -38,10 +57,10 @@ int main() {
 
     std::ostringstream os;
     PcReader pcReader;
-    HDL64RIConverter riConverter(HDL64_THETA_PRECISION,
-                                 riPrecisions[i],
-                                 HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
-                                 HDL64_HORIZONTAL_DEGREE_OFFSET/riPrecisions[i]);
+    RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                            HDL64_THETA_PRECISION, riPrecisions[i],
+                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
     for(int idx = 0; idx < numScans; idx++)
     {
@@ -49,38 +68,39 @@ int main() {
       std::string fn = lidarDataPath + "/" + os.str() + ".bin";
       os.str(""); os.clear();
 
-      PclPcXYZ pcXyz = pcReader.readXyzFromXyziBin(fn);
+      types::PclPcXyz pcXyz = pcReader.readXyzFromXyziBin(fn);
 
-      cv::Mat *ri;
+      cv::Mat ri;
       cv::Mat nRi;
       double riMax, riMin;
 
       st = getTsNow();
-      ri = riConverter.convertPc2Ri(pcXyz);
-      riConverter.normalizeRi(ri, &nRi, &riMin, &riMax);
+      riConverter.convertPc2Ri(pcXyz, ri, true);
+      riConverter.normalizeRi(ri, nRi, riMin, riMax);
       et = getTsNow();
       pc2nri->info("PC2nRI exe\t{}", et-st);
 
       cv::Mat decRi;
-      PclPcXYZ decXyz;
+      types::PclPcXyz decXyz;
 
       st = getTsNow();
-      riConverter.denormalizeRi(&nRi, riMax, &decRi);
-      decXyz = riConverter.reconstructPcFromRi(&decRi);
+      riConverter.denormalizeRi(nRi, riMin, riMax, decRi);
+      decXyz = riConverter.reconstructPcFromRi(decRi, true);
       et = getTsNow();
       nri2pc->info("nRI2PC exe\t{}", et-st);
 
       // metric logging
-      float samplingError = calcSamplingError(pcXyz, decXyz);
-      float PSNR          = calcPSNR(pcXyz, decXyz, 80);
-      float CD            = calcCD(pcXyz, decXyz);
+      float samplingError = Metrics::calcPoinNumDiffBtwPcs(pcXyz, decXyz);
+      float PSNR = Metrics::calcPsnrBtwPcs(pcXyz, decXyz, 80);
+      float CD = Metrics::calcCdBtwPcs(pcXyz, decXyz);
+
 
       metricLogger->info("\t{}\t{}\t{}", samplingError, PSNR, CD);
 
       decRi.release();
       decXyz->clear();
 
-      ri->release(); delete ri;
+      ri.release();
       pcXyz->clear();
 
       printProgress((float)idx/(float)numScans);

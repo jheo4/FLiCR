@@ -1,7 +1,7 @@
-#include "defs.h"
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
 int main() {
   double st, et;
@@ -28,28 +28,9 @@ int main() {
   PcReader pcReader;
 
   Visualizer visualizer;
-  visualizer.initViewerXYZ();
+  visualizer.initViewerXyz();
 
-  int numScans = 0;
-  DIR *dir = opendir(lidarDataPath.c_str());
-  if(dir == NULL)
-  {
-    debug_print("invalide lidarDataPath in config.yaml");
-    return 0;
-  }
-  else
-  {
-    struct dirent *ent;
-    while(ent = readdir(dir))
-    {
-      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
-      else
-      {
-        numScans++;
-      }
-    }
-  }
-  closedir(dir);
+  int numScans = countFilesInDirectory(lidarDataPath.c_str());
   debug_print("# of scans: %d", numScans);
   numScans = 1;
 
@@ -67,7 +48,7 @@ int main() {
     os.str(""); os.clear();
 
     // read data
-    PclPcXYZ pcXyz;
+    types::PclPcXyz pcXyz;
     std::vector<float> intensity;
     if(pcReader.readXyzInt(fn, pcXyz, intensity) == false) return -1;
 
@@ -83,27 +64,23 @@ int main() {
       int newCol  = (float)origCol * 2;
       double newPrec = piPrec[prec] / 2;
 
-      HDL64RIConverter riConverter(HDL64_THETA_PRECISION, piPrec[prec], row, origCol);
-      HDL64RIConverter newRiConverter(HDL64_THETA_PRECISION, newPrec, row, newCol);
+      RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                              HDL64_THETA_PRECISION, piPrec[prec],
+                              HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                              HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
-      if(newCol != newRiConverter.riCol)
-      {
-        debug_print("newCol %d, newRiConverter.riCol %d -- mismatch", origCol, newRiConverter.riCol);
-      }
-
-      debug_print("Original Prec (%f) for %dx%d", riConverter.piPrecision,       riConverter.riCol,    riConverter.riRow);
-      debug_print("New      Prec (%f) for %dx%d", newRiConverter.piPrecision, newRiConverter.riCol, newRiConverter.riRow);
+      debug_print("Original Prec (%f) for %dx%d", riConverter.piPrecision, riConverter.riCol, riConverter.riRow);
 
 
-      cv::Mat *ri;
+      cv::Mat ri;
       cv::Mat nRi, upRi;
       cv::Mat origDnRi, dnRi;
       double riMax, riMin;
 
-      PclPcXYZ origRecXyz, decPcXyz;
+      types::PclPcXyz origRecXyz, decPcXyz;
 
-      ri = riConverter.convertPc2Ri(pcXyz);
-      riConverter.normalizeRi(ri, &nRi, &riMin, &riMax);
+      riConverter.convertPc2Ri(pcXyz, ri, true);
+      riConverter.normalizeRi(ri, nRi, riMin, riMax);
 
       // upscale
       // cv::INTER_LINEAR
@@ -117,13 +94,20 @@ int main() {
       cv::imshow("enlarged RI from subsampled RI", upRi);
       cv::waitKey();
 
+      riConverter.setConfig(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                            HDL64_THETA_PRECISION, newPrec,
+                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+
+      debug_print("New Prec (%f) for %dx%d", riConverter.piPrecision, riConverter.riCol, riConverter.riRow);
+
 
       st = getTsNow();
-      newRiConverter.denormalizeRi(&upRi, riMax, &dnRi);
-      newRiConverter.denormalizeRi(&nRi, riMax, &origDnRi);
+      riConverter.denormalizeRi(upRi, riMin, riMax, dnRi);
+      riConverter.denormalizeRi(nRi, riMin, riMax, origDnRi);
 
-      decPcXyz = newRiConverter.reconstructPcFromRi(&dnRi);
-      origRecXyz = riConverter.reconstructPcFromRi(&origDnRi);
+      decPcXyz   = riConverter.reconstructPcFromRi(dnRi, true);
+      origRecXyz = riConverter.reconstructPcFromRi(origDnRi, true);
 
       visualizer.setViewer(origRecXyz);
       visualizer.show(1);

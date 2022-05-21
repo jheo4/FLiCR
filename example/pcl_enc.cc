@@ -1,4 +1,4 @@
-#include <3dpcc>
+#include <flicr>
 #include <bits/stdc++.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -7,9 +7,11 @@
 #include <pcl/compression/compression_profiles.h>
 
 using namespace std;
+using namespace flicr;
 
+// Encode raw point cloud with PCL's octree compressor
+// ./pcl_enc orig.bin encoded.bin
 int main(int argc, char* argv[]) {
-  // ./pcl_enc orig.bin encoded.bin
   double st, et;
 
   if(argc != 3) exit(1);
@@ -23,7 +25,7 @@ int main(int argc, char* argv[]) {
   outf.open(output, std::ios::binary);
 
   PcReader pcReader;
-  PclPcXYZ pcXyz = pcReader.readXyzFromXyziBin(input);
+  types::PclPcXyz pcXyz = pcReader.readXyzFromXyziBin(input);
 
   pcl::io::compression_Profiles_e xyzProfile = pcl::io::MED_RES_OFFLINE_COMPRESSION_WITHOUT_COLOR;
   pcl::io::OctreePointCloudCompression<pcl::PointXYZ> *xyzEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZ>(xyzProfile);

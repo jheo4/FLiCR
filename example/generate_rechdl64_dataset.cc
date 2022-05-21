@@ -1,9 +1,11 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
+// Generate PC dataset with subsampling & quantization
+// ./generate_ri_dataset source_dir dest_dir horizontal_res
 int main(int argc, char* argv[]) {
-  // ./generate_ri_dataset source_dir dest_dir horizontal_res
 
   if(argc != 5) exit(1);
   std::string sourceDir  = argv[1];
@@ -22,37 +24,19 @@ int main(int argc, char* argv[]) {
   PcReader pcReader;
   PcWriter pcWriter;
   float riPrecision = 360.0/stof(horizRes);
-  HDL64RIConverter riConverter(HDL64_THETA_PRECISION,
-                               riPrecision,
-                               HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
-                               HDL64_HORIZONTAL_DEGREE_OFFSET/riPrecision);
+  RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                          HDL64_THETA_PRECISION, riPrecision,
+                          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+
   std::shared_ptr<spdlog::logger> metricLogger = spdlog::basic_logger_st("metLogger", "logs/riDataset/" + horizRes + "_metric.log");
   metricLogger->info("SamplingError\tPSNR\tCD");
 
   debug_print("RI/IntMap Size: %d x %d", riConverter.riCol, riConverter.riRow);
 
-  int numScans = 0;
-  DIR *dir = opendir(sourceDir.c_str());
-  if(dir == NULL)
-  {
-    debug_print("invalide lidarDataPath in config.yaml");
-    return 0;
-  }
-  else
-  {
-    struct dirent *ent;
-    while(ent = readdir(dir))
-    {
-      if(!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {}
-      else
-      {
-        numScans++;
-      }
-    }
-  }
-  closedir(dir);
-
+  int numScans = countFilesInDirectory(sourceDir.c_str());
   debug_print("# of scans: %d", numScans);
+
   for(int idx = 0; idx < numScans; idx++)
   {
     os << std::setw(zeros) << std::setfill('0') << idx;
@@ -60,32 +44,32 @@ int main(int argc, char* argv[]) {
     std::string fn = sourceDir + "/" + index + ".bin";
     os.str(""); os.clear();
 
-    PclPcXYZI pcXyzi = pcReader.readXyziBin(fn);
-    PclPcXYZI rePcXyzi;
+    types::PclPcXyzi pcXyzi = pcReader.readXyziBin(fn);
+    types::PclPcXyzi rePcXyzi;
 
     cv::Mat ri, intMap;
     cv::Mat nRi, nIntMap;
     cv::Mat decRi, decIntMap;
     double riMax, riMin, intMax, intMin;
 
-    riConverter.convertPc2RiWithIm(pcXyzi, ri, intMap);
+    riConverter.convertPc2RiWithIm(pcXyzi, ri, intMap, true);
 
-    riConverter.normalizeRi(&ri, &nRi, &riMin, &riMax);
-    riConverter.normalizeRi(&intMap, &nIntMap, &intMin, &intMax);
+    riConverter.normalizeRi(ri, nRi, riMin, riMax);
+    riConverter.normalizeRi(intMap, nIntMap, intMin, intMax);
 
-    riConverter.denormalizeRi(&nRi, riMax, &decRi);
-    riConverter.denormalizeRi(&nIntMap, intMax, &decIntMap);
+    riConverter.denormalizeRi(nRi, riMin, riMax, decRi);
+    riConverter.denormalizeRi(nIntMap, intMin, intMax, decIntMap);
 
-    rePcXyzi = riConverter.reconstructPcFromRiWithIm(decRi, decIntMap);
+    rePcXyzi = riConverter.reconstructPcFromRiWithIm(decRi, decIntMap, true);
 
-    pcWriter.writeBin(destDir + "/" + index + ".bin", rePcXyzi); 
+    pcWriter.writeBin(destDir + "/" + index + ".bin", rePcXyzi);
 
     // metric logging
-    PclPcXYZ origXYZ = xyzi2xyz(pcXyzi);
-    PclPcXYZ decXYZ  = xyzi2xyz(rePcXyzi);
-    float samplingError = calcSamplingError(origXYZ, decXYZ);
-    float PSNR          = calcPSNR(origXYZ, decXYZ, 80);
-    float CD            = calcCD(origXYZ, decXYZ);
+    types::PclPcXyz origXYZ = types::xyzi2xyz(pcXyzi);
+    types::PclPcXyz decXYZ  = types::xyzi2xyz(rePcXyzi);
+    float samplingError = Metrics::calcPoinNumDiffBtwPcs(origXYZ, decXYZ);
+    float PSNR          = Metrics::calcPsnrBtwPcs(origXYZ, decXYZ, HDL64_MAX_RANGE);
+    float CD            = Metrics::calcCdBtwPcs(origXYZ, decXYZ);
 
     metricLogger->info("{}\t{}\t{}", samplingError, PSNR, CD);
 

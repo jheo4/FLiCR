@@ -1,9 +1,11 @@
-#include <3dpcc>
+#include <flicr>
 
 using namespace std;
+using namespace flicr;
 
+// Decode point cloud encoded with LZ77 and RI subsampling
+// ./lz77_ri_dec orig.bin encoded.bin decoded.bin 4096
 int main(int argc, char* argv[]) {
-  // ./qdict_dec orig.bin encoded.bin decoded.bin 4096
 
   if(argc != 4) exit(1);
   std::string input  = argv[1];
@@ -15,7 +17,7 @@ int main(int argc, char* argv[]) {
   cout << riRes << endl;
 
   PcWriter writer;
-  PclPcXYZ pc;
+  types::PclPcXyz pc;
 
   FILE* ifp = fopen(input.c_str(), "rb");
   if(ifp == NULL)
@@ -25,10 +27,10 @@ int main(int argc, char* argv[]) {
   }
 
   double piPrec = 360.0/stof(riRes);
-  HDL64RIConverter converter(HDL64_THETA_PRECISION,
-                             piPrec,
-                             HDL64_VERTICAL_DEGREE_OFFSET/HDL64_THETA_PRECISION,
-                             HDL64_HORIZONTAL_DEGREE_OFFSET/piPrec);
+  RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+                          HDL64_THETA_PRECISION, piPrec,
+                          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
   uint32_t readBufSize = 4800000;
   char *readBuf = new char[readBufSize];
@@ -46,8 +48,8 @@ int main(int argc, char* argv[]) {
     cv::Mat recNri(64, stoi(riRes), CV_8UC1, decoded.data());
     cv::Mat recRiFromNri;
 
-    converter.denormalizeRi(&recNri, 80, &recRiFromNri);
-    pc = converter.reconstructPcFromRi(&recRiFromNri);
+    riConverter.denormalizeRi(recNri, HDL64_MIN_RANGE, HDL64_MAX_RANGE, recRiFromNri);
+    pc = riConverter.reconstructPcFromRi(recRiFromNri, true);
 
     if(i == 0) writer.writeBin(output, pc);
   }
