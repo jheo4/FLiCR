@@ -14,6 +14,7 @@
 #include "./flicr_include/pc_writer.h"
 #include "./flicr_include/visualizer.h"
 #include "./flicr_include/ri_converter.h"
+#include "./flicr_include/ri_interpolator.h"
 
 #include "./flicr_include/compressor/encoder.h"
 #include "./flicr_include/compressor/decoder.h"
