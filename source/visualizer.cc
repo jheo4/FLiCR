@@ -56,6 +56,12 @@ void Visualizer::setViewer(types::PclMesh mesh)
 }
 
 
+void Visualizer::setViewerBEV(int height)
+{
+  viewer->setCameraPosition(0, 0, height,  0, 0, 0,  0, 1, 0);
+}
+
+
 void Visualizer::show(int tickPeriod)
 {
   if(viewer != nullptr)

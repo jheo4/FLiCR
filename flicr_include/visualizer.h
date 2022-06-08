@@ -20,6 +20,7 @@ class Visualizer
     void setViewer(types::PclPcXyz pc);
     void setViewer(types::PclPcXyzi pc);
     void setViewer(types::PclMesh mesh);
+    void setViewerBEV(int height=100);
     void show(int tickPeriod=100);
     void saveToFile(std::string fileName);
 };
