@@ -10,14 +10,17 @@ namespace flicr
 class IntrIndexInfo
 {
 public:
-  int index;
+  int hIndex, vIndex;
+  int hStart, vStart;
   int prevGradient;
   int curGradient;
+  int intrPriority;
 
   void print()
   {
     printf("===== IntrIndexInfo =====\n");
-    printf("\tIndex: %d\n", index);
+    printf("\thIndex: %d\n", hIndex);
+    printf("\tvIndex: %d\n", vIndex);
     printf("\tprevious Gradient: %d\n", prevGradient);
     printf("\tcurrent Gradient: %d\n", curGradient);
   }
@@ -34,12 +37,19 @@ class RiInterpolator
     int hIter, vIter;
 
 
-    enum IntrPolicy
+    enum IntrIndexPolicy
     {
       LeastGradient,
       GreatestGradient
     };
 
+
+    enum IntrPriority
+    {
+      NONZ_NONZ,
+      NONZ_ZERO,
+      ZERO
+    };
 
 
     RiInterpolator(): origRow(0), origCol(0), intrRow(0), intrCol(0),hWnd(1), vWnd(1) {}
@@ -97,7 +107,7 @@ class RiInterpolator
     }
 
 
-    IntrIndexInfo getHorizontalIntrIndex(cv::Mat original, int hWndStart, int vIdx, IntrPolicy policy, int gradThresh)
+    IntrIndexInfo getHorizontalIntrIndex(cv::Mat original, int hWndStart, int vIdx, IntrIndexPolicy policy, int gradThresh)
     {
       uchar curP = 0, nextP = 0;
       uchar curGrad = 0, prevGrad = 0;
@@ -110,22 +120,38 @@ class RiInterpolator
       {
         curP     = original.at<uchar>(vIdx, hWndIdx);
         nextP    = original.at<uchar>(vIdx, hWndIdx+1);
-        prevGrad = curGrad;
-        curGrad  = abs(curP - nextP);
+        if(curP != 0)
+        {
+          prevGrad = curGrad;
+          curGrad  = abs(curP - nextP);
+        }
+        else
+        {
+          prevGrad = 0;
+          curGrad  = 0;
+        }
 
         IntrIndexInfo idxInfo;
-        idxInfo.index        = hWndIdx;
+        idxInfo.hIndex       = hWndIdx;
+        idxInfo.vIndex       = vIdx;
         idxInfo.curGradient  = curGrad;
         idxInfo.prevGradient = prevGrad;
+        idxInfo.intrPriority = IntrPriority::ZERO;
 
         // Priority...
         // 1. curP is not 0 && nextP is not 0
-        // 2. curP is not 0 || nextP is not 0
-        // 3. curP is 0     && nextP is 0
+        // 2. curP is not 0 && nextP is 0
+        // 3. curP is 0
         if(curP != 0 && nextP != 0)
+        {
+          idxInfo.intrPriority = IntrPriority::NONZ_NONZ;
           firstIntrIdx.push_back(idxInfo);
+        }
         else if(curP != 0 && nextP == 0)
+        {
+          idxInfo.intrPriority = IntrPriority::NONZ_ZERO;
           secondIntrIdx.push_back(idxInfo);
+        }
       }
 
       // 2. Find the interpolation index from the created IntrIndicesInfo
@@ -139,11 +165,11 @@ class RiInterpolator
         {
           if(intrIdxInfo.curGradient < firstIntrIdx[i].curGradient &&
               firstIntrIdx[i].curGradient < gradThresh &&
-              policy == IntrPolicy::GreatestGradient)
+              policy == IntrIndexPolicy::GreatestGradient)
             intrIdxInfo = firstIntrIdx[i];
           else if(intrIdxInfo.curGradient > firstIntrIdx[i].curGradient &&
               firstIntrIdx[i].curGradient < gradThresh &&
-              policy == IntrPolicy::LeastGradient)
+              policy == IntrIndexPolicy::LeastGradient)
             intrIdxInfo = firstIntrIdx[i];
         }
       }
@@ -153,27 +179,110 @@ class RiInterpolator
         intrIdxInfo = secondIntrIdx[0];
         for(int i = 1; i < (int)secondIntrIdx.size(); i++)
         {
-          if(intrIdxInfo.curGradient < secondIntrIdx[i].curGradient && policy == IntrPolicy::GreatestGradient)
+          if(intrIdxInfo.curGradient < secondIntrIdx[i].curGradient && policy == IntrIndexPolicy::GreatestGradient)
             intrIdxInfo = secondIntrIdx[i];
-          else if(intrIdxInfo.curGradient > secondIntrIdx[i].curGradient && policy == IntrPolicy::LeastGradient)
+          else if(intrIdxInfo.curGradient > secondIntrIdx[i].curGradient && policy == IntrIndexPolicy::LeastGradient)
             intrIdxInfo = secondIntrIdx[i];
         }
       }
       // 3rd priority
       else
       {
-        intrIdxInfo.index        = hWndStart;
+        intrIdxInfo.hIndex        = hWndStart;
+        intrIdxInfo.vIndex        = vIdx;
         intrIdxInfo.curGradient  = 0;
         intrIdxInfo.prevGradient = 0;
+        intrIdxInfo.intrPriority = IntrPriority::ZERO;
       }
+
+      intrIdxInfo.hStart = hWndStart;
+      intrIdxInfo.vStart = vIdx;
 
       return intrIdxInfo;
     }
 
 
-    cv::Mat interpolateHorizontal(cv::Mat original, IntrPolicy policy)
+    void interpolateHorizontalWindow(cv::Mat original, cv::Mat intrRi, int gradThresh, int hIter, int vIter, IntrIndexInfo intrIndexInfo)
+    {
+      int intrHidx = hIter * (hWnd+1);
+
+      for(int origHidx = intrIndexInfo.hStart; origHidx < intrIndexInfo.hStart + hWnd; origHidx++, intrHidx++)
+      {
+        if(origHidx == intrIndexInfo.hIndex)
+        {
+          switch(intrIndexInfo.intrPriority)
+          {
+            case IntrPriority::NONZ_NONZ:
+              if(intrIndexInfo.curGradient < gradThresh)
+              {
+                // curGrad < thresh --> linear interpolation
+                int curP = original.at<uchar>(vIter, origHidx);
+                int nextP = original.at<uchar>(vIter, origHidx+1);
+                double tempGrad = (nextP-curP)/2;
+
+                intrRi.at<uchar>(vIter, intrHidx) = curP;
+                intrHidx++;
+                intrRi.at<uchar>(vIter, intrHidx) = curP + tempGrad;
+              }
+              else // if(intrIndexInfo.curGradient >= gradThresh)
+              {
+                // curGrad > thresh --> put empty -- distancing between objects...
+                intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
+                intrHidx++;
+                intrRi.at<uchar>(vIter, intrHidx) = 0;
+              }
+              break;
+
+            case IntrPriority::NONZ_ZERO:
+              if(intrIndexInfo.prevGradient == 0)
+              {
+                // prevGrad == 0 --> put empty
+                intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
+                intrHidx++;
+                intrRi.at<uchar>(vIter, intrHidx) = 0;
+              }
+              else // if(intrIndexInfo.prevGradient != 0)
+              {
+                // prevGrad != 0 --> put interpolated point with prevGrad
+                int curP = original.at<uchar>(vIter, origHidx);
+                int prevP = original.at<uchar>(vIter, origHidx-1);
+                int tempGrad = curP - prevP;
+
+                intrRi.at<uchar>(vIter, intrHidx) = curP;
+                intrHidx++;
+                intrRi.at<uchar>(vIter, intrHidx) = curP + tempGrad;
+              }
+              break;
+
+            case IntrPriority::ZERO:
+            default:
+              // put empty...
+              intrRi.at<uchar>(vIter, intrHidx++) = 0;
+              intrRi.at<uchar>(vIter, intrHidx) = 0;
+              break;
+          }
+        }
+        else // if(origHidx != intrIndexInfo.hIndex)
+        {
+          intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
+        }
+      }
+    }
+
+
+    cv::Mat interpolateHorizontal(cv::Mat original, IntrIndexPolicy intrIndexPolicy=IntrIndexPolicy::LeastGradient, int gradThresh=3)
     {
       cv::Mat outRi(intrRow, intrCol, CV_8UC1, cv::Scalar(0));
+
+      for(int x = 0; x < hIter; x++)
+      {
+        for(int y = 0; y < vIter; y++)
+        {
+          IntrIndexInfo info = getHorizontalIntrIndex(original, x*hWnd, y, intrIndexPolicy, gradThresh);
+          interpolateHorizontalWindow(original, outRi, gradThresh, x, y, info);
+        }
+      }
+
       return outRi;
     }
 };
