@@ -3,6 +3,8 @@
 using namespace std;
 using namespace flicr;
 
+#define INTR_WIND_SIZE 3
+
 int main(int argc, char **argv)
 {
   cxxopts::Options options("FLiCR", "FLiCR");
@@ -48,10 +50,12 @@ int main(int argc, char **argv)
   for(int prec = 3; prec < 4; prec++)
   {
     RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-                            HDL64_THETA_PRECISION, piPrec[prec],
+                            HDL64_THETA_PRECISION, HDL64_PI_PRECISION_512,
                             HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
                             HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
-    debug_print("%d x %d", riConverter.riCol, riConverter.riRow);
+
+    debug_print("Target RI: %d x %d", riConverter.riCol, riConverter.riRow);
+
 
     for(int idx = 0; idx < numScans; idx++)
     {
@@ -66,31 +70,40 @@ int main(int argc, char **argv)
 
       if(pcReader.readXyzInt(fn, pcXyz, intensity) == false) return -1;
 
-      cv::Mat ri, nRi; // original --> nri
-      cv::Mat deRi;    // original --> nri --> deRi
-      cv::Mat compNri, compRi, compRi2; // original --> 4096 nri --> 4096 ri
-      cv::Mat intrNri, intrRi; // original --> intrNri  --> intrRi
-      double riMax, riMin;
-      types::PclPcXyz intrXyz, recXyz, compXyz;
+      // target Ri
+      cv::Mat ri, nRi, deRi; // original --> nri --> deRi --> xyz
+      types::PclPcXyz recXyz;
 
-      // 2. pc --> ri --> nri
+      // intr Ri
+      cv::Mat intrNri, intrDeRi; // nri --> intrNri --> intrDeRi --> intrXyz
+      types::PclPcXyz intrXyz;
+
+      // comp Ri
+      cv::Mat compNri, compRi, compDeRi; // original --> 4096 nri --> 4096 ri
+      types::PclPcXyz compXyz;
+
+      double riMax, riMin;
+
+
+      // 2. pc --> target ri --> target nri
       riConverter.convertPc2Ri(pcXyz, ri, true);
       riConverter.normalizeRi(ri, nRi, riMin, riMax);
 
-      // 2. pc --> 4096ri --> 4096nri
+      // 2. pc --> comp Ri --> comp nRi
       riConverter.setConfig(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-          HDL64_THETA_PRECISION, HDL64_PI_PRECISION_4096,
-          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
-          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+                            HDL64_THETA_PRECISION, HDL64_PI_PRECISION_1024,
+                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+
       riConverter.convertPc2Ri(pcXyz, compRi, true);
       riConverter.normalizeRi(compRi, compNri, riMin, riMax);
-      riConverter.denormalizeRi(compNri, riMin, riMax, compRi2);
-      compXyz = riConverter.reconstructPcFromRi(compRi2, true);
+      riConverter.denormalizeRi(compNri, riMin, riMax, compDeRi);
+      compXyz = riConverter.reconstructPcFromRi(compDeRi, true);
 
       riConverter.setConfig(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-          HDL64_THETA_PRECISION, piPrec[prec],
-          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
-          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+                            HDL64_THETA_PRECISION, HDL64_PI_PRECISION_512,
+                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
 
       // side-channel: pc --> ri --> nri --> deRi --> recPc
@@ -99,50 +112,53 @@ int main(int argc, char **argv)
 
       // 3. interpolate
       RiInterpolator riInterpolator;
-      riInterpolator.setIntr(riConverter.riRow, riConverter.riCol, 3, 1); // origRow, origCol, hWnd, vWnd
+      riInterpolator.setIntr(riConverter.riRow, riConverter.riCol, INTR_WIND_SIZE, 1); // origRow, origCol, hWnd, vWnd
       riInterpolator.printSetting();
       intrNri = riInterpolator.interpolateHorizontal(nRi, RiInterpolator::GreatestGradient, 10);
 
       // 4. riConverter reset -- intrCol, intrRow
       riConverter.setConfig(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-          HDL64_THETA_PRECISION, HDL64_HORIZONTAL_DEGREE/(double)riInterpolator.intrCol,
-          HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
-          HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
-      debug_print("%d x %d", riConverter.riCol, riConverter.riRow);
+                            HDL64_THETA_PRECISION, HDL64_HORIZONTAL_DEGREE/(double)riInterpolator.intrCol,
+                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+      debug_print("Intr RI: %d x %d", riConverter.riCol, riConverter.riRow);
 
       // 3. intrNri --> intrRi --> intrPc
-      riConverter.denormalizeRi(intrNri, riMin, riMax, intrRi);
-      intrXyz = riConverter.reconstructPcFromRi(intrRi, true);
+      riConverter.denormalizeRi(intrNri, riMin, riMax, intrDeRi);
+      intrXyz = riConverter.reconstructPcFromRi(intrDeRi, true);
 
       debug_print("Orig # of points: %ld", pcXyz->size());
-      debug_print("Rec  # of points: %ld", recXyz->size());
+      debug_print("Target # of points: %ld", recXyz->size());
       debug_print("Intr # of points: %ld", intrXyz->size());
 
-      cv::imshow("nRI", nRi);
-      cv::imshow("4096nRi", compNri);
+      //cv::imshow("orig nRI", nRi);
+      cv::imshow("compNri", compNri);
+      cv::imshow("targetNrI", nRi);
       cv::imshow("intrNrI", intrNri);
       cv::waitKey();
 
 
+      /*
       visualizer.setViewer(pcXyz);
       visualizer.setViewerBEV(70);
       visualizer.saveToFile("1Orig_File.png");
       visualizer.show(1000);
+      */
 
       visualizer.setViewer(recXyz);
       visualizer.setViewerBEV(70);
-      visualizer.saveToFile("2Rec_File.png");
-      visualizer.show(1000);
+      visualizer.saveToFile("1_target.png");
+      visualizer.show(5000);
 
       visualizer.setViewer(compXyz);
       visualizer.setViewerBEV(70);
-      visualizer.saveToFile("3-4096_File.png");
-      visualizer.show(1000);
+      visualizer.saveToFile("2_comp.png");
+      visualizer.show(5000);
 
       visualizer.setViewer(intrXyz);
       visualizer.setViewerBEV(70);
-      visualizer.saveToFile("4Intr_File.png");
-      visualizer.show(1000);
+      visualizer.saveToFile("3_intr.png");
+      visualizer.show(5000);
 
       nRi.release();
       ri.release();
