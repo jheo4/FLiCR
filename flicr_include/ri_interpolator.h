@@ -107,6 +107,8 @@ class RiInterpolator
     }
 
 
+    // find the position within a window to interpolate by policies...
+    // TODO: priority... depth-awareness
     IntrIndexInfo getHorizontalIntrIndex(cv::Mat original, int hWndStart, int vIdx, IntrIndexPolicy policy, int gradThresh)
     {
       uchar curP = 0, nextP = 0;
@@ -202,6 +204,7 @@ class RiInterpolator
     }
 
 
+    // interpolate a point within a given window...
     void interpolateHorizontalWindow(cv::Mat original, cv::Mat intrRi, int gradThresh, int hIter, int vIter, IntrIndexInfo intrIndexInfo)
     {
       int intrHidx = hIter * (hWnd+1);
@@ -270,6 +273,7 @@ class RiInterpolator
     }
 
 
+    // interpolate whole RI by windowing
     cv::Mat interpolateHorizontal(cv::Mat original, IntrIndexPolicy intrIndexPolicy=IntrIndexPolicy::LeastGradient, int gradThresh=3)
     {
       cv::Mat outRi(intrRow, intrCol, CV_8UC1, cv::Scalar(0));
@@ -285,6 +289,96 @@ class RiInterpolator
 
       return outRi;
     }
+
+
+    void interpolateEmptySpace(cv::Mat ri, int gradWndSize, int gradThresh=5, int maxZeros=2, bool circular=true)
+    {
+      for(int y = 0; y < ri.rows; y++)
+      {
+        for(int x = 0; x < ri.cols; x++)
+        {
+          int zeros = zeroWalk(y, x, ri);
+
+          if(zeros > 0)
+          {
+            if(zeros <= maxZeros)
+            {
+              fillZeros(ri, y, x, gradWndSize, gradThresh, zeros, circular);
+            }
+            x += (zeros-1);
+          }
+        }
+      }
+    }
+
+    protected:
+    int zeroWalk(int y, int x, cv::Mat ri)
+    {
+      int curP;
+      int zeros = 0;
+      do
+      {
+        curP = ri.at<uchar>(y, x);
+        if(curP == 0)
+        {
+          zeros++;
+          x++;
+        }
+      } while(curP == 0);
+
+      return zeros;
+    }
+
+    protected:
+    void fillZeros(cv::Mat ri, int y, int x, int wndSize, int gradThresh, int zeros, bool circular)
+    {
+      for(int zero = 0; zero < zeros; zero++)
+      {
+        int curX = x+zero;
+        int wndX = curX-wndSize;
+
+        int gradSum  = 0;
+        int numGrads = 0;
+
+        // iterate...
+        for(int i = 0; i < wndSize-1; i++)
+        {
+          int wndIdx = wndX+i;
+          int nextWndIdx = wndIdx + 1;
+
+          if(circular && wndIdx < 0)
+          {
+            wndIdx = ri.cols-wndIdx;
+            nextWndIdx = (nextWndIdx >= ri.cols) ? nextWndIdx-ri.cols : nextWndIdx;
+          }
+
+          int curP  = ri.at<uchar>(y, wndIdx);
+          int nextP = ri.at<uchar>(y, nextWndIdx);
+          if(curP != 0 && nextP != 0)
+          {
+            gradSum += (nextP - curP);
+            numGrads++;
+          }
+          else
+          {
+            gradSum  = 0;
+            numGrads = 0;
+          }
+        }
+
+        if(numGrads > 0)
+        {
+          int grad = (gradSum/numGrads);
+          if(abs(grad) < gradThresh)
+          {
+            int pixVal = ri.at<uchar>(y, curX-1) + (gradSum/numGrads);
+            pixVal = (pixVal < 0) ? 0 : (pixVal > 255) ? 255 : pixVal;
+            ri.at<uchar>(y, curX) = pixVal;
+          }
+        }
+      }
+    }
+
 };
 }
 
