@@ -10,23 +10,21 @@ namespace flicr
 class IntrInfo
 {
 public:
-  int intrValue;
-  int intrX, intrY;
-
-  ////////////////////
-  int xWndIdx, yWndIdx;
-  int xWndStart, yWndStart;
-  int prevGradient;
-  int curGradient;
-  int intrPriority;
+  int baseVal;
+  int wndX, wndY;
+  int gradient;
 
   void print()
   {
     printf("===== IntrInfo =====\n");
-    printf("\thIndex: %d\n", hIndex);
-    printf("\tvIndex: %d\n", vIndex);
-    printf("\tprevious Gradient: %d\n", prevGradient);
-    printf("\tcurrent Gradient: %d\n", curGradient);
+    printf("\tBase Value: %d\n", baseVal);
+    printf("\tLocation (y, x): (%d, %d)\n", wndY, wndX);
+    printf("\tGradient Magnitude: %d\n", gradient);
+  }
+
+  static bool compareBaseVal(IntrInfo info1, IntrInfo info2)
+  {
+    return (info1.baseVal > info2.baseVal); // for descending order by baseVal
   }
 };
 
@@ -39,21 +37,6 @@ class RiInterpolator
     int intrRow, intrCol;
     int hWnd, vWnd;
     int hIter, vIter;
-
-
-    enum IntrIndexPolicy
-    {
-      LeastGradient,
-      GreatestGradient
-    };
-
-
-    enum IntrPriority
-    {
-      NONZ_NONZ,
-      NONZ_ZERO,
-      ZERO
-    };
 
 
     RiInterpolator(): origRow(0), origCol(0), intrRow(0), intrCol(0),hWnd(1), vWnd(1) {}
@@ -110,252 +93,275 @@ class RiInterpolator
       return outRi;
     }
 
-
-    int getNextX(int x, int riCol, int offset=1, bool circular=true)
+    // Get the X index in RI with circular iteration
+    int getRiX(int x, int riCol, int offset, bool circular)
     {
-      int nextX = x+offset;
-      if(circular)
-        return (nextX < riCol) ? nextX : nextX-riCol;
-      else
-        return (nextX < riCol) ? nextX : -1;
-    }
+      int xOffset = x + offset;
+      int remainedOffset = xOffset % riCol;
 
-    int getPrevX(int x, int riCol, int offset=1, bool circular=true)
-    {
-      int prevX = x-offset;
-      if(circular)
-        return (prevX < 0) ? riCol-prevX : prevX;
-      else
-        return (prevX < 0) ? -1 : prevX;
-    }
-
-
-    cv::Mat interpolate(cv::Mat original, int searchWndSize, int insertions, int gradThresh, IntrIndexPolicy intrIndexPolicy=IntrIndexPolicy::LeastGradient, bool circular=true)
-    {
-      int xIter = original.cols/searchWndSize;
-      int intrCols = xIter*(searchWndSize+insertions);
-
-      cv::Mat outRi(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
-
-      for(int y = 0; y < original.rows; y++)
+      if(remainedOffset < 0)
       {
-        for(int xWnd = 0; xWnd < xIter; xWnd++)
-        {
+        return circular ? riCol + remainedOffset : INVALID_INDEX;
+      }
+      else // remainedOffset >= 0
+      {
+        if(xOffset >= riCol)
+          return circular ? remainedOffset : INVALID_INDEX;
+        else
+          return remainedOffset;
+      }
+    }
 
+    // Get the gradient to the next pixel with the given curX, curY
+    int getNextGradient(int curY, int curX, cv::Mat ri, bool circular, int gradThresh)
+    {
+      int riCols = ri.cols;
+
+      int nextX, nextnextX;
+
+      char curP = ri.at<char>(curY, curX);
+      char nextP, nextnextP;
+
+      int nextGrad = INVALID_GRADIENT;
+
+      if(curP != 0) // priority -- NZ
+      {
+        nextX = getRiX(curX, riCols, 1, circular);
+        if(nextX != INVALID_INDEX)
+        {
+          nextP = ri.at<char>(curY, nextX);
+          nextGrad = (nextP == 0) ? INVALID_GRADIENT :
+            (abs(nextP-curP) > gradThresh) ? INVALID_GRADIENT : nextP - curP;
+        }
+        else
+        {
+          nextGrad = INVALID_GRADIENT;
         }
       }
-
-
-
-
-      for(int x = 0; x < hIter; x++)
+      else // curP == 0, priority -- Z
       {
-        for(int y = 0; y < vIter; y++)
-        {
-          // IntrIndexInfo info = getHorizontalIntrIndex(original, x*hWnd, y, intrIndexPolicy, gradThresh);
-          IntrInfo info = getIntrIndex(original, y, x, searchWndSize, gradThresh, intrIndexPolicy, circular);
+        nextX = getRiX(curX, riCols, 1, circular);
+        nextnextX = getRiX(curX, riCols, 2, circular);
 
-          // interpolateHorizontalWindow(original, outRi, gradThresh, x, y, info);
+        if(nextX != INVALID_INDEX && nextnextX != INVALID_INDEX)
+        {
+          nextP = ri.at<char>(curY, nextX);
+          nextnextP = ri.at<char>(curY, nextnextX);
+          nextGrad = (nextP == 0 || nextnextP == 0) ? INVALID_GRADIENT :
+            (abs(nextnextP-nextP) > gradThresh) ? INVALID_GRADIENT : nextnextP - nextP;
+        }
+        else
+        {
+          nextGrad = INVALID_GRADIENT;
+        }
+      }
+      return nextGrad;
+    }
+
+    // Get the gradient to the previous pixel with the given curX, curY
+    int getPrevGradient(int curY, int curX, cv::Mat ri, bool circular, int gradThresh)
+    {
+      int riCols = ri.cols;
+
+      int prevX, prevprevX;
+
+      char curP = ri.at<char>(curY, curX);
+      char prevP, prevprevP;
+
+      int prevGrad = INVALID_GRADIENT;
+
+      if(curP != 0) // priority -- NZ
+      {
+        prevX = getRiX(curX, riCols, -1, circular);
+        if(prevX != INVALID_INDEX)
+        {
+          prevP = ri.at<char>(curY, prevX);
+          prevGrad = (prevP == 0) ? INVALID_GRADIENT :
+            (abs(curP - prevP) > gradThresh) ? INVALID_GRADIENT : prevP - curP;
+        }
+        else
+        {
+          prevGrad = INVALID_GRADIENT;
+        }
+      }
+      else // curP == 0, priority -- Z
+      {
+        prevX = getRiX(curX, riCols, -1, circular);
+        prevprevX = getRiX(curX, riCols, -2, circular);
+        if(prevX != INVALID_INDEX && prevprevX != INVALID_INDEX)
+        {
+          prevP = ri.at<char>(curY, prevX);
+          prevprevP =ri.at<char>(curY, prevprevX);
+          prevGrad = (prevP == 0 || prevprevP == 0) ? INVALID_GRADIENT :
+            (abs(prevP-prevprevP) > gradThresh) ? INVALID_GRADIENT : prevprevP - prevP;
+        }
+        else
+        {
+          prevGrad = INVALID_GRADIENT;
+        }
+      }
+      return prevGrad;
+    }
+
+
+    cv::Mat interpolate(cv::Mat original, int sWndSize, int insertions, bool circular, int gradThresh)
+    {
+      if(original.cols % sWndSize != 0)
+      {
+        debug_print("invalid sWndSize: original.cols %d, sWndSize %d", original.cols, sWndSize);
+        exit(0);
+      }
+
+      int xIter = original.cols / sWndSize;
+      int riCols = original.cols;
+      int intrCols = xIter * (sWndSize+insertions);
+      cv::Mat outRi(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
+
+      debug_print("xIter: %d, riCols: %d", xIter, riCols);
+
+      for(int y = 0; y < original.rows; y++) // column iteration...
+      {
+        for(int xWnd = 0; xWnd < xIter; xWnd++) // X windows (row) iteration...
+        {
+
+          /* 1. Find the interpolation info */
+          int xWndStart = xWnd     * sWndSize;
+          int xWndEnd   = (xWnd+1) * sWndSize;
+
+          int curX;
+          char curP;
+          int zNextX, zPrevX;
+
+          int nextGrad, prevGrad, leastGrad;
+
+          // Interpolation Infos within a window...
+          std::vector<IntrInfo> nzIntrInfos;
+          std::vector<IntrInfo> zIntrInfos;
+          std::vector<IntrInfo> ivIntrInfos;
+
+          for(int x = xWndStart, xWndIdx=0; x < xWndEnd; x++, xWndIdx++) // iterations in each X window...
+          {
+            IntrInfo intrInfo;
+
+            curX = getRiX(x, riCols, 0, circular);
+            curP = original.at<char>(y, curX);
+
+            if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
+            {
+              nextGrad = getNextGradient(y, curX, original, circular, gradThresh);
+              prevGrad = getPrevGradient(y, curX, original, circular, gradThresh);
+
+            }
+            else // NZ -- next
+            {
+              nextGrad = getNextGradient(y, curX, original, circular, gradThresh);
+              prevGrad = INVALID_GRADIENT;
+            }
+
+
+            if(nextGrad != INVALID_GRADIENT && prevGrad != INVALID_GRADIENT)
+              leastGrad = (abs(nextGrad) < abs(prevGrad)) ? nextGrad : prevGrad;
+            else if(nextGrad == INVALID_GRADIENT && prevGrad != INVALID_GRADIENT)
+              leastGrad = prevGrad;
+            else if(nextGrad != INVALID_GRADIENT && prevGrad == INVALID_GRADIENT)
+              leastGrad = nextGrad;
+            else
+              leastGrad = INVALID_GRADIENT;
+
+            if(leastGrad == INVALID_GRADIENT || leastGrad == -INVALID_GRADIENT) // ivIntrInfos
+            {
+              intrInfo.gradient = leastGrad;
+              intrInfo.wndX = xWndIdx+1;
+              intrInfo.wndY = y;
+              intrInfo.baseVal = 0;
+              ivIntrInfos.push_back(intrInfo);
+            }
+            else
+            {
+              intrInfo.gradient = leastGrad;
+              intrInfo.wndX = (abs(nextGrad) < abs(prevGrad)) ? xWndIdx+1 : xWndIdx;
+              intrInfo.wndY = y;
+              if(curP == 0) // zIntrInfos
+              {
+                zNextX = getRiX(x, riCols, 1, circular);
+                zPrevX = getRiX(x, riCols, -1, circular);
+                intrInfo.baseVal = (abs(nextGrad) < abs(prevGrad)) ? original.at<char>(y, zNextX) : original.at<char>(y, zPrevX);
+                zIntrInfos.push_back(intrInfo);
+              }
+              else // nzIntrInfos
+              {
+                intrInfo.baseVal = curP;
+                nzIntrInfos.push_back(intrInfo);
+              }
+            }
+          }
+
+
+          // Sort nzIntrInfos, zIntrInfos by farthest priority
+          // | nzIntrInfos | zIntrInfos | ivIntrInfos |
+          // |     insertions     |
+          std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseVal);
+          std::sort(zIntrInfos.begin(),   zIntrInfos.end(), IntrInfo::compareBaseVal);
+          int zIntrBase = nzIntrInfos.size();
+          int ivIntrBase = nzIntrInfos.size() + zIntrInfos.size();
+
+          int xIntrWndStart = xWnd * (sWndSize+insertions);
+          bool intrWndMask[MAX_INTERPOLATE_WND_SIZE] = {false,};
+          if(sWndSize+insertions > MAX_INTERPOLATE_WND_SIZE)
+          {
+            debug_print("MAX_INTERPOLATE_WND_SIZE %d is overflowed by given params %d+%d",
+                MAX_INTERPOLATE_WND_SIZE, sWndSize, insertions);
+            exit(0);
+          }
+
+          /* 2. Interpolate window with the found info */
+          /* 2.1. Interpolation & mask */
+          for(int insertion = 0; insertion < insertions; insertion++)
+          {
+            IntrInfo curInfo;
+            int intrX;
+            if(insertion < zIntrBase)
+            {
+              curInfo = nzIntrInfos[insertion];
+              intrX = xIntrWndStart + curInfo.wndX + insertion;
+              outRi.at<char>(y, intrX) = curInfo.baseVal + (curInfo.gradient/2);
+              intrWndMask[curInfo.wndX+insertion] = true;
+            }
+            else if(zIntrBase <= insertion && insertion < ivIntrBase)
+            {
+              curInfo = zIntrInfos[insertion-zIntrBase];
+              intrX = xIntrWndStart + curInfo.wndX + insertion;
+              outRi.at<char>(y, intrX) = curInfo.baseVal + curInfo.gradient;
+              intrWndMask[curInfo.wndX+insertion] = true;
+            }
+            else
+            {
+              curInfo = ivIntrInfos[insertion-ivIntrBase];
+              intrX = xIntrWndStart + curInfo.wndX + insertion;
+              outRi.at<char>(y, intrX) = 0;
+              intrWndMask[curInfo.wndX+insertion] = true;
+            }
+          }
+
+          /* 2.1. Original & mask */
+          for(int origX = xWndStart, xIntrWnd = 0; origX < xWndEnd; origX++) // iterations in each X window...
+          {
+            curP = original.at<char>(y, origX);
+            while(intrWndMask[xIntrWnd] == true) xIntrWnd++;
+
+            outRi.at<char>(y, xIntrWndStart+xIntrWnd) = curP;
+            intrWndMask[xIntrWnd] = true;
+          }
+
         }
       }
 
       return outRi;
     }
 
-    // find the position within a window to interpolate by policies...
-    // TODO: priority... depth-awareness
-    IntrInfo getIntrIndex(cv::Mat original, int y, int x, int searchWndSize, int gradThresh, IntrIndexPolicy intrIndexPolicy, bool circular)
-    {
-      // search forward & backward...
-      uchar curP = 0, nextP = 0;
-      uchar curGrad = 0, prevGrad = 0;
-
-      IntrInfo info;
-
-      // non-gradient -- searchWndSize -> 1
-      if(searchWndSize == 1)
-      {
-        int prevX, nextX;
-        if(circular)
-        {
-          prevX  = (x-1 < 0) ? original.cols-1 : x-1;
-          nextX = (x+1 >= original.cols) ? 0 : x+1;
-        }
-        else
-        {
-          prevX  = x-1;
-          nextX = (x+1 >= original.cols) ? -1 : x+1;
-        }
-
-        if(prevX >= 0) curP = original.at<uchar>(y, prevX);
-        if(nextX >= 0) nextP = original.at<uchar>(y, nextX);
-
-        info.intrValue = (curP > nextP) ? curP : nextP;
-        info.intrX     = (curP > nextP)
-      }
 
 
-
-      std::vector<IntrIndexInfo> firstIntrIdx;
-      std::vector<IntrIndexInfo> secondIntrIdx;
-
-      // 1. Iterate window & create IntrIndicesInfo by priority
-      for(int hWndIdx = hWndStart; hWndIdx < hWndStart + hWnd; hWndIdx++)
-      {
-        curP     = original.at<uchar>(vIdx, hWndIdx);
-        nextP    = original.at<uchar>(vIdx, hWndIdx+1);
-        if(curP != 0)
-        {
-          prevGrad = curGrad;
-          curGrad  = abs(curP - nextP);
-        }
-        else
-        {
-          prevGrad = 0;
-          curGrad  = 0;
-        }
-
-        IntrIndexInfo idxInfo;
-        idxInfo.hIndex       = hWndIdx;
-        idxInfo.vIndex       = vIdx;
-        idxInfo.curGradient  = curGrad;
-        idxInfo.prevGradient = prevGrad;
-        idxInfo.intrPriority = IntrPriority::ZERO;
-
-        // Priority...
-        // 1. curP is not 0 && nextP is not 0
-        // 2. curP is not 0 && nextP is 0
-        // 3. curP is 0
-        if(curP != 0 && nextP != 0)
-        {
-          idxInfo.intrPriority = IntrPriority::NONZ_NONZ;
-          firstIntrIdx.push_back(idxInfo);
-        }
-        else if(curP != 0 && nextP == 0)
-        {
-          idxInfo.intrPriority = IntrPriority::NONZ_ZERO;
-          secondIntrIdx.push_back(idxInfo);
-        }
-      }
-
-      // 2. Find the interpolation index from the created IntrIndicesInfo
-      IntrIndexInfo intrIdxInfo;
-
-      // 1st priority
-      if(firstIntrIdx.size() != 0)
-      {
-        intrIdxInfo = firstIntrIdx[0];
-        for(int i = 1; i < (int)firstIntrIdx.size(); i++)
-        {
-          if(intrIdxInfo.curGradient < firstIntrIdx[i].curGradient &&
-              firstIntrIdx[i].curGradient < gradThresh &&
-              policy == IntrIndexPolicy::GreatestGradient)
-            intrIdxInfo = firstIntrIdx[i];
-          else if(intrIdxInfo.curGradient > firstIntrIdx[i].curGradient &&
-              firstIntrIdx[i].curGradient < gradThresh &&
-              policy == IntrIndexPolicy::LeastGradient)
-            intrIdxInfo = firstIntrIdx[i];
-        }
-      }
-      // 2nd priority
-      else if(secondIntrIdx.size() != 0)
-      {
-        intrIdxInfo = secondIntrIdx[0];
-        for(int i = 1; i < (int)secondIntrIdx.size(); i++)
-        {
-          if(intrIdxInfo.curGradient < secondIntrIdx[i].curGradient && policy == IntrIndexPolicy::GreatestGradient)
-            intrIdxInfo = secondIntrIdx[i];
-          else if(intrIdxInfo.curGradient > secondIntrIdx[i].curGradient && policy == IntrIndexPolicy::LeastGradient)
-            intrIdxInfo = secondIntrIdx[i];
-        }
-      }
-      // 3rd priority
-      else
-      {
-        intrIdxInfo.hIndex        = hWndStart;
-        intrIdxInfo.vIndex        = vIdx;
-        intrIdxInfo.curGradient  = 0;
-        intrIdxInfo.prevGradient = 0;
-        intrIdxInfo.intrPriority = IntrPriority::ZERO;
-      }
-
-      intrIdxInfo.hStart = hWndStart;
-      intrIdxInfo.vStart = vIdx;
-
-      return intrIdxInfo;
-    }
-
-
-    // interpolate a point within a given window...
-    void interpolateHorizontalWindow(cv::Mat original, cv::Mat intrRi, int gradThresh, int hIter, int vIter, IntrIndexInfo intrIndexInfo)
-    {
-      int intrHidx = hIter * (hWnd+1);
-
-      for(int origHidx = intrIndexInfo.hStart; origHidx < intrIndexInfo.hStart + hWnd; origHidx++, intrHidx++)
-      {
-        if(origHidx == intrIndexInfo.hIndex)
-        {
-          switch(intrIndexInfo.intrPriority)
-          {
-            case IntrPriority::NONZ_NONZ:
-              if(intrIndexInfo.curGradient < gradThresh)
-              {
-                // curGrad < thresh --> linear interpolation
-                int curP = original.at<uchar>(vIter, origHidx);
-                int nextP = original.at<uchar>(vIter, origHidx+1);
-                double tempGrad = (nextP-curP)/2;
-
-                intrRi.at<uchar>(vIter, intrHidx) = curP;
-                intrHidx++;
-                intrRi.at<uchar>(vIter, intrHidx) = curP + tempGrad;
-              }
-              else // if(intrIndexInfo.curGradient >= gradThresh)
-              {
-                // curGrad > thresh --> put empty -- distancing between objects...
-                intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
-                intrHidx++;
-                intrRi.at<uchar>(vIter, intrHidx) = 0;
-              }
-              break;
-
-            case IntrPriority::NONZ_ZERO:
-              if(intrIndexInfo.prevGradient == 0)
-              {
-                // prevGrad == 0 --> put empty
-                intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
-                intrHidx++;
-                intrRi.at<uchar>(vIter, intrHidx) = 0;
-              }
-              else // if(intrIndexInfo.prevGradient != 0)
-              {
-                // prevGrad != 0 --> put interpolated point with prevGrad
-                int curP = original.at<uchar>(vIter, origHidx);
-                int prevP = original.at<uchar>(vIter, origHidx-1);
-                int tempGrad = curP - prevP;
-
-                intrRi.at<uchar>(vIter, intrHidx) = curP;
-                intrHidx++;
-                intrRi.at<uchar>(vIter, intrHidx) = curP + tempGrad;
-              }
-              break;
-
-            case IntrPriority::ZERO:
-            default:
-              // put empty...
-              intrRi.at<uchar>(vIter, intrHidx++) = 0;
-              intrRi.at<uchar>(vIter, intrHidx) = 0;
-              break;
-          }
-        }
-        else // if(origHidx != intrIndexInfo.hIndex)
-        {
-          intrRi.at<uchar>(vIter, intrHidx) = original.at<uchar>(vIter, origHidx);
-        }
-      }
-    }
-
-
-
+    // Trial...
     void interpolateEmptySpace(cv::Mat ri, int gradWndSize, int gradThresh=5, int maxZeros=2, bool circular=true)
     {
       for(int y = 0; y < ri.rows; y++)
