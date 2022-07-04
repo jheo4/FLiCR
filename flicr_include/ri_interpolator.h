@@ -7,18 +7,22 @@
 
 namespace flicr
 {
-class IntrIndexInfo
+class IntrInfo
 {
 public:
-  int hIndex, vIndex;
-  int hStart, vStart;
+  int intrValue;
+  int intrX, intrY;
+
+  ////////////////////
+  int xWndIdx, yWndIdx;
+  int xWndStart, yWndStart;
   int prevGradient;
   int curGradient;
   int intrPriority;
 
   void print()
   {
-    printf("===== IntrIndexInfo =====\n");
+    printf("===== IntrInfo =====\n");
     printf("\thIndex: %d\n", hIndex);
     printf("\tvIndex: %d\n", vIndex);
     printf("\tprevious Gradient: %d\n", prevGradient);
@@ -107,12 +111,90 @@ class RiInterpolator
     }
 
 
+    int getNextX(int x, int riCol, int offset=1, bool circular=true)
+    {
+      int nextX = x+offset;
+      if(circular)
+        return (nextX < riCol) ? nextX : nextX-riCol;
+      else
+        return (nextX < riCol) ? nextX : -1;
+    }
+
+    int getPrevX(int x, int riCol, int offset=1, bool circular=true)
+    {
+      int prevX = x-offset;
+      if(circular)
+        return (prevX < 0) ? riCol-prevX : prevX;
+      else
+        return (prevX < 0) ? -1 : prevX;
+    }
+
+
+    cv::Mat interpolate(cv::Mat original, int searchWndSize, int insertions, int gradThresh, IntrIndexPolicy intrIndexPolicy=IntrIndexPolicy::LeastGradient, bool circular=true)
+    {
+      int xIter = original.cols/searchWndSize;
+      int intrCols = xIter*(searchWndSize+insertions);
+
+      cv::Mat outRi(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
+
+      for(int y = 0; y < original.rows; y++)
+      {
+        for(int xWnd = 0; xWnd < xIter; xWnd++)
+        {
+
+        }
+      }
+
+
+
+
+      for(int x = 0; x < hIter; x++)
+      {
+        for(int y = 0; y < vIter; y++)
+        {
+          // IntrIndexInfo info = getHorizontalIntrIndex(original, x*hWnd, y, intrIndexPolicy, gradThresh);
+          IntrInfo info = getIntrIndex(original, y, x, searchWndSize, gradThresh, intrIndexPolicy, circular);
+
+          // interpolateHorizontalWindow(original, outRi, gradThresh, x, y, info);
+        }
+      }
+
+      return outRi;
+    }
+
     // find the position within a window to interpolate by policies...
     // TODO: priority... depth-awareness
-    IntrIndexInfo getHorizontalIntrIndex(cv::Mat original, int hWndStart, int vIdx, IntrIndexPolicy policy, int gradThresh)
+    IntrInfo getIntrIndex(cv::Mat original, int y, int x, int searchWndSize, int gradThresh, IntrIndexPolicy intrIndexPolicy, bool circular)
     {
+      // search forward & backward...
       uchar curP = 0, nextP = 0;
       uchar curGrad = 0, prevGrad = 0;
+
+      IntrInfo info;
+
+      // non-gradient -- searchWndSize -> 1
+      if(searchWndSize == 1)
+      {
+        int prevX, nextX;
+        if(circular)
+        {
+          prevX  = (x-1 < 0) ? original.cols-1 : x-1;
+          nextX = (x+1 >= original.cols) ? 0 : x+1;
+        }
+        else
+        {
+          prevX  = x-1;
+          nextX = (x+1 >= original.cols) ? -1 : x+1;
+        }
+
+        if(prevX >= 0) curP = original.at<uchar>(y, prevX);
+        if(nextX >= 0) nextP = original.at<uchar>(y, nextX);
+
+        info.intrValue = (curP > nextP) ? curP : nextP;
+        info.intrX     = (curP > nextP)
+      }
+
+
 
       std::vector<IntrIndexInfo> firstIntrIdx;
       std::vector<IntrIndexInfo> secondIntrIdx;
@@ -272,23 +354,6 @@ class RiInterpolator
       }
     }
 
-
-    // interpolate whole RI by windowing
-    cv::Mat interpolateHorizontal(cv::Mat original, IntrIndexPolicy intrIndexPolicy=IntrIndexPolicy::LeastGradient, int gradThresh=3)
-    {
-      cv::Mat outRi(intrRow, intrCol, CV_8UC1, cv::Scalar(0));
-
-      for(int x = 0; x < hIter; x++)
-      {
-        for(int y = 0; y < vIter; y++)
-        {
-          IntrIndexInfo info = getHorizontalIntrIndex(original, x*hWnd, y, intrIndexPolicy, gradThresh);
-          interpolateHorizontalWindow(original, outRi, gradThresh, x, y, info);
-        }
-      }
-
-      return outRi;
-    }
 
 
     void interpolateEmptySpace(cv::Mat ri, int gradWndSize, int gradThresh=5, int maxZeros=2, bool circular=true)

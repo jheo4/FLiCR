@@ -5,6 +5,9 @@
 #define DEGREE2RAD(r) (r*(PI/180.0f))
 //#define RAD2DEGREE (180.0f/PI)
 
+#define INVALID_GRADIENT -99999
+#define INVALID_INDEX    -1
+
 #define KITTI_DATASET_FREQUENCY 10
 
 // https://bit.ly/3gHtGzf
