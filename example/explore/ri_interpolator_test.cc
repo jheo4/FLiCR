@@ -3,8 +3,6 @@
 using namespace std;
 using namespace flicr;
 
-#define INTR_WIND_SIZE 3
-
 int main(int argc, char **argv)
 {
   cxxopts::Options options("FLiCR", "FLiCR");
@@ -39,55 +37,87 @@ int main(int argc, char **argv)
   debug_print("# of scans: %d", numScans);
   numScans = 1;
 
-  double piPrec[6] = {HDL64_PI_PRECISION_4500, HDL64_PI_PRECISION_4096, HDL64_PI_PRECISION_2048,
-                      HDL64_PI_PRECISION_1024, HDL64_PI_PRECISION_512, HDL64_PI_PRECISION_256};
-
   std::ostringstream os;
   PcReader pcReader;
   Visualizer visualizer;
   visualizer.initViewerXyz();
 
-  for(int prec = 3; prec < 4; prec++)
+  RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+      HDL64_THETA_PRECISION, HDL64_PI_PRECISION_1024,
+      HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+      HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+
+  debug_print("Target RI: %d x %d", riConverter.riCol, riConverter.riRow);
+
+  for(int idx = 0; idx < numScans; idx++)
   {
-    RiConverter riConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-                            HDL64_THETA_PRECISION, HDL64_PI_PRECISION_512,
-                            HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
-                            HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+    // 1. read rawPc
+    os << std::setw(10) << std::setfill('0') << idx;
+    std::string fn = lidarDataPath + "/" + os.str() + ".bin";
+    debug_print("%s", fn.c_str());
+    os.str(""); os.clear();
 
-    debug_print("Target RI: %d x %d", riConverter.riCol, riConverter.riRow);
+    types::PclPcXyz pcXyz;
+    std::vector<float> intensity;
 
-
-    for(int idx = 0; idx < numScans; idx++)
+    if(pcReader.readXyzInt(fn, pcXyz, intensity) == false)
     {
-      // 1. read rawPc
-      os << std::setw(10) << std::setfill('0') << idx;
-      std::string fn = lidarDataPath + "/" + os.str() + ".bin";
-      debug_print("%s", fn.c_str());
-      os.str(""); os.clear();
+      debug_print("pcReader.readXyzInt failed...");
+      return -1;
+    }
 
-      types::PclPcXyz pcXyz;
-      std::vector<float> intensity;
+    double riMax, riMin;
+    cv::Mat origRi, normOrigRi;
+    cv::Mat denormOrigRi;
+    types::PclPcXyz recXyz;
 
-      if(pcReader.readXyzInt(fn, pcXyz, intensity) == false) return -1;
+    cv::Mat normIntrRi, denormIntrRi;
+    types::PclPcXyz recIntrXyz;
 
-      // target Ri
-      cv::Mat ri, nRi, deRi; // original --> nri --> deRi --> xyz
-      types::PclPcXyz recXyz;
+    // cv::Mat compNri, compRi, compDeRi; // original --> 4096 nri --> 4096 ri
+    // types::PclPcXyz compXyz;
 
-      // intr Ri
-      cv::Mat intrNri, intrDeRi; // nri --> intrNri --> intrDeRi --> intrXyz
-      types::PclPcXyz intrXyz;
-
-      // comp Ri
-      cv::Mat compNri, compRi, compDeRi; // original --> 4096 nri --> 4096 ri
-      types::PclPcXyz compXyz;
-
-      double riMax, riMin;
+    // 2. PC --> origRi --> normOrigRi
+    riConverter.convertPc2Ri(pcXyz, origRi, true);
+    riConverter.normalizeRi(origRi, normOrigRi, riMin, riMax);
+    riConverter.denormalizeRi(normOrigRi, riMin, riMax, denormOrigRi);
+    recXyz = riConverter.reconstructPcFromRi(denormOrigRi, true);
 
 
-      // 2. pc --> target ri --> target nri
-      riConverter.convertPc2Ri(pcXyz, ri, true);
-      riConverter.normalizeRi(ri, nRi, riMin, riMax);
+    RiInterpolator riInterpolator;
+    double st, et;
+    st = getTsNow();
+    normIntrRi = riInterpolator.interpolate(normOrigRi, 4, 3, true, 3);
+    et = getTsNow();
+    debug_print("interpolate lat: %f", et-st);
+
+    debug_print("intrNormRi size: %d x %d", normIntrRi.rows, normIntrRi.cols);
+    cv::imshow("normOrigRi", normOrigRi);
+    cv::imshow("intrNormRi", normIntrRi);
+    cv::waitKey();
+
+    RiConverter intrRiConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
+        HDL64_THETA_PRECISION, (double)360/normIntrRi.cols,
+        HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
+        HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
+    intrRiConverter.denormalizeRi(normIntrRi, riMin, riMax, denormIntrRi);
+    recIntrXyz = intrRiConverter.reconstructPcFromRi(denormIntrRi, true);
+
+
+    visualizer.setViewer(pcXyz);
+    visualizer.saveToFile("1Orig_File.png");
+    visualizer.show(5000);
+
+    visualizer.setViewer(recIntrXyz);
+    visualizer.saveToFile("2Intr_File.png");
+    visualizer.show(5000);
+
+    visualizer.setViewer(recXyz);
+    visualizer.saveToFile("3Subsampled_File.png");
+    visualizer.show(5000);
+
+
+    /*
 
       // 2. pc --> comp Ri --> comp nRi
       riConverter.setConfig(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
@@ -136,6 +166,7 @@ int main(int argc, char **argv)
       cv::imshow("targetNrI", nRi);
       cv::imshow("intrNrI", intrNri);
       cv::waitKey();
+      */
 
 
       /*
@@ -145,6 +176,7 @@ int main(int argc, char **argv)
       visualizer.show(1000);
       */
 
+    /*
       visualizer.setViewer(recXyz);
       visualizer.setViewerBEV(70);
       visualizer.saveToFile("1_target.png");
@@ -159,20 +191,25 @@ int main(int argc, char **argv)
       visualizer.setViewerBEV(70);
       visualizer.saveToFile("3_intr.png");
       visualizer.show(5000);
+      */
 
-      nRi.release();
-      ri.release();
-      nRi.release();
-      printProgress((float)idx/(float)numScans);
+    pcXyz->clear();
+    intensity.clear();
 
-      pcXyz->clear();
-      intensity.clear();
-    }
-    printProgress(1);
+    origRi.release();
+    normOrigRi.release();
+    denormOrigRi.release();
+
+    normIntrRi.release();
+    denormIntrRi.release();
+
+    printProgress((float)idx/(float)numScans);
 
     os.flush();
     os.clear();
   }
+
+  printProgress(1);
 
   return 0;
 }
