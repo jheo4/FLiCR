@@ -8,8 +8,6 @@
 #define INVALID_GRADIENT -99999
 #define INVALID_INDEX    -1
 
-#define MAX_INTERPOLATE_WND_SIZE 32
-
 #define KITTI_DATASET_FREQUENCY 10
 
 // https://bit.ly/3gHtGzf

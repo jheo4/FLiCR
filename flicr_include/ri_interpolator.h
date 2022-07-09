@@ -10,21 +10,34 @@ namespace flicr
 class IntrInfo
 {
 public:
+  enum IntrDir
+  {
+    LEFT,
+    RIGHT
+  };
+
   int baseVal;
   int wndX, wndY;
   int gradient;
+  IntrDir dir;
 
   void print()
   {
     printf("===== IntrInfo =====\n");
     printf("\tBase Value: %d\n", baseVal);
     printf("\tLocation (y, x): (%d, %d)\n", wndY, wndX);
+    printf("\tInterpolation Direction: %s\n", (dir == LEFT) ? "LEFT" : "RIGHT");
     printf("\tGradient Magnitude: %d\n", gradient);
   }
 
   static bool compareBaseVal(IntrInfo info1, IntrInfo info2)
   {
     return (info1.baseVal > info2.baseVal); // for descending order by baseVal
+  }
+
+  static bool compareWndX(IntrInfo info1, IntrInfo info2)
+  {
+    return (info1.wndX > info2.wndX); // for descending order by wndX
   }
 };
 
@@ -148,7 +161,7 @@ class RiInterpolator
           nextP = ri.at<char>(curY, nextX);
           nextnextP = ri.at<char>(curY, nextnextX);
           nextGrad = (nextP == 0 || nextnextP == 0) ? INVALID_GRADIENT :
-            (abs(nextnextP-nextP) > gradThresh) ? INVALID_GRADIENT : nextnextP - nextP;
+            (abs(nextnextP-nextP) > gradThresh) ? INVALID_GRADIENT : nextP - nextnextP;
         }
         else
         {
@@ -193,7 +206,7 @@ class RiInterpolator
           prevP = ri.at<char>(curY, prevX);
           prevprevP =ri.at<char>(curY, prevprevX);
           prevGrad = (prevP == 0 || prevprevP == 0) ? INVALID_GRADIENT :
-            (abs(prevP-prevprevP) > gradThresh) ? INVALID_GRADIENT : prevprevP - prevP;
+            (abs(prevP-prevprevP) > gradThresh) ? INVALID_GRADIENT : prevP - prevprevP;
         }
         else
         {
@@ -201,6 +214,17 @@ class RiInterpolator
         }
       }
       return prevGrad;
+    }
+
+
+    void interpolateInWnd(cv::Mat mat, IntrInfo info, int y, int xWndStart, int xWndEnd)
+    {
+      int intrWndX = info.wndX + ((info.dir == IntrInfo::RIGHT) ? 1 : 0);
+      int insertionX = xWndStart + intrWndX;
+      for(int x = xWndEnd-1; x >= insertionX; x--)
+        mat.at<char>(y, x) = mat.at<char>(y, x-1);
+
+      mat.at<char>(y, insertionX) = info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2);
     }
 
 
@@ -225,10 +249,11 @@ class RiInterpolator
         {
 
           /* 1. Find the interpolation info */
-          int xWndStart = xWnd     * sWndSize;
-          int xWndEnd   = (xWnd+1) * sWndSize;
+          int xWndStart     = xWnd     * sWndSize;
+          int xWndEnd       = (xWnd+1) * sWndSize;
+          int xIntrWndStart = xWnd     * (sWndSize+insertions);
+          int xIntrWndEnd   = (xWnd+1) * (sWndSize+insertions);
 
-          int curX;
           char curP;
           int zNextX, zPrevX;
 
@@ -238,26 +263,23 @@ class RiInterpolator
           std::vector<IntrInfo> nzIntrInfos;
           std::vector<IntrInfo> zIntrInfos;
           std::vector<IntrInfo> ivIntrInfos;
+          std::vector<IntrInfo> intrInfos;
 
-          for(int x = xWndStart, xWndIdx=0; x < xWndEnd; x++, xWndIdx++) // iterations in each X window...
+          for(int x=xWndStart, xWndIdx=0, intrX=xIntrWndStart; x < xWndEnd; x++, xWndIdx++, intrX++) // iterations in each X window...
           {
-            IntrInfo intrInfo;
-
-            curX = getRiX(x, riCols, 0, circular);
-            curP = original.at<char>(y, curX);
+            curP = original.at<char>(y, x);
+            outRi.at<char>(y, intrX) = curP;
 
             if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
             {
-              nextGrad = getNextGradient(y, curX, original, circular, gradThresh);
-              prevGrad = getPrevGradient(y, curX, original, circular, gradThresh);
-
+              nextGrad = getNextGradient(y, x, original, circular, gradThresh);
+              prevGrad = getPrevGradient(y, x, original, circular, gradThresh);
             }
             else // NZ -- next
             {
-              nextGrad = getNextGradient(y, curX, original, circular, gradThresh);
+              nextGrad = getNextGradient(y, x, original, circular, gradThresh);
               prevGrad = INVALID_GRADIENT;
             }
-
 
             if(nextGrad != INVALID_GRADIENT && prevGrad != INVALID_GRADIENT)
               leastGrad = (abs(nextGrad) < abs(prevGrad)) ? nextGrad : prevGrad;
@@ -268,19 +290,22 @@ class RiInterpolator
             else
               leastGrad = INVALID_GRADIENT;
 
+            IntrInfo intrInfo;
             if(leastGrad == INVALID_GRADIENT || leastGrad == -INVALID_GRADIENT) // ivIntrInfos
             {
-              intrInfo.gradient = leastGrad;
-              intrInfo.wndX = xWndIdx+1;
+              intrInfo.gradient = 0;
+              intrInfo.wndX = xWndIdx;
               intrInfo.wndY = y;
+              intrInfo.dir  = IntrInfo::RIGHT;
               intrInfo.baseVal = 0;
               ivIntrInfos.push_back(intrInfo);
             }
             else
             {
               intrInfo.gradient = leastGrad;
-              intrInfo.wndX = (abs(nextGrad) < abs(prevGrad)) ? xWndIdx+1 : xWndIdx;
+              intrInfo.wndX = xWndIdx;
               intrInfo.wndY = y;
+              intrInfo.dir  = (abs(nextGrad) < abs(prevGrad)) ? IntrInfo::RIGHT : IntrInfo::LEFT;
               if(curP == 0) // zIntrInfos
               {
                 zNextX = getRiX(x, riCols, 1, circular);
@@ -300,59 +325,32 @@ class RiInterpolator
           // Sort nzIntrInfos, zIntrInfos by farthest priority
           // | nzIntrInfos | zIntrInfos | ivIntrInfos |
           // |     insertions     |
-          std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseVal);
-          std::sort(zIntrInfos.begin(),   zIntrInfos.end(), IntrInfo::compareBaseVal);
           int zIntrBase = nzIntrInfos.size();
           int ivIntrBase = nzIntrInfos.size() + zIntrInfos.size();
 
-          int xIntrWndStart = xWnd * (sWndSize+insertions);
-          bool intrWndMask[MAX_INTERPOLATE_WND_SIZE] = {false,};
-          if(sWndSize+insertions > MAX_INTERPOLATE_WND_SIZE)
+          std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseVal);
+          if(insertions > (int)nzIntrInfos.size())
           {
-            debug_print("MAX_INTERPOLATE_WND_SIZE %d is overflowed by given params %d+%d",
-                MAX_INTERPOLATE_WND_SIZE, sWndSize, insertions);
-            exit(0);
+            std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseVal);
           }
 
-          /* 2. Interpolate window with the found info */
-          /* 2.1. Interpolation & mask */
           for(int insertion = 0; insertion < insertions; insertion++)
           {
             IntrInfo curInfo;
-            int intrX;
             if(insertion < zIntrBase)
-            {
               curInfo = nzIntrInfos[insertion];
-              intrX = xIntrWndStart + curInfo.wndX + insertion;
-              outRi.at<char>(y, intrX) = curInfo.baseVal + (curInfo.gradient/2);
-              intrWndMask[curInfo.wndX+insertion] = true;
-            }
             else if(zIntrBase <= insertion && insertion < ivIntrBase)
-            {
               curInfo = zIntrInfos[insertion-zIntrBase];
-              intrX = xIntrWndStart + curInfo.wndX + insertion;
-              outRi.at<char>(y, intrX) = curInfo.baseVal + curInfo.gradient;
-              intrWndMask[curInfo.wndX+insertion] = true;
-            }
             else
-            {
               curInfo = ivIntrInfos[insertion-ivIntrBase];
-              intrX = xIntrWndStart + curInfo.wndX + insertion;
-              outRi.at<char>(y, intrX) = 0;
-              intrWndMask[curInfo.wndX+insertion] = true;
-            }
+            intrInfos.push_back(curInfo);
           }
+          std::sort(intrInfos.begin(), intrInfos.end(), IntrInfo::compareWndX);
 
-          /* 2.1. Original & mask */
-          for(int origX = xWndStart, xIntrWnd = 0; origX < xWndEnd; origX++) // iterations in each X window...
+          for(int insertion = 0; insertion < insertions; insertion++)
           {
-            curP = original.at<char>(y, origX);
-            while(intrWndMask[xIntrWnd] == true) xIntrWnd++;
-
-            outRi.at<char>(y, xIntrWndStart+xIntrWnd) = curP;
-            intrWndMask[xIntrWnd] = true;
+              interpolateInWnd(outRi, intrInfos[insertion], y, xIntrWndStart, xIntrWndEnd);
           }
-
         }
       }
 

@@ -39,7 +39,7 @@ void Visualizer::setViewer(types::PclPcXyzi pc)
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
   viewer->addCoordinateSystem(1.0);
   viewer->initCameraParameters();
-  viewer->setCameraPosition(0, 60, 20,  0, 0, 0,  0, 0, 1);
+  viewer->setCameraPosition(0, 30, 60,  0, 0, 0,  0, 0, 1);
 }
 
 
@@ -59,6 +59,12 @@ void Visualizer::setViewer(types::PclMesh mesh)
 void Visualizer::setViewerBEV(int height)
 {
   viewer->setCameraPosition(0, 0, height,  0, 0, 0,  0, 1, 0);
+}
+
+
+void Visualizer::setViewerXyz(int x, int y, int z)
+{
+  viewer->setCameraPosition(x, y, z, 0, 0, 0,  0, 0, 1);
 }
 
 
