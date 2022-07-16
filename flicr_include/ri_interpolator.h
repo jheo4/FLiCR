@@ -17,6 +17,7 @@ public:
   };
 
   int baseVal;
+  int baseIntVal;
   int wndX, wndY;
   int gradient;
   IntrDir dir;
@@ -30,9 +31,14 @@ public:
     printf("\tGradient Magnitude: %d\n", gradient);
   }
 
-  static bool compareBaseVal(IntrInfo info1, IntrInfo info2)
+  static bool compareBaseValDesc(IntrInfo info1, IntrInfo info2)
   {
     return (info1.baseVal > info2.baseVal); // for descending order by baseVal
+  }
+
+  static bool compareBaseValAsc(IntrInfo info1, IntrInfo info2)
+  {
+    return (info1.baseVal < info2.baseVal); // for descending order by baseVal
   }
 
   static bool compareWndX(IntrInfo info1, IntrInfo info2)
@@ -51,6 +57,12 @@ class RiInterpolator
     int hWnd, vWnd;
     int hIter, vIter;
 
+    enum InterpolationPriority
+    {
+      FARTHEST,
+      NEAREST,
+      RANDOM
+    };
 
     RiInterpolator(): origRow(0), origCol(0), intrRow(0), intrCol(0),hWnd(1), vWnd(1) {}
 
@@ -228,7 +240,22 @@ class RiInterpolator
     }
 
 
-    cv::Mat interpolate(cv::Mat original, int sWndSize, int insertions, bool circular, int gradThresh)
+    void interpolateInWnd(cv::Mat mat, cv::Mat matInt, IntrInfo info, int y, int xWndStart, int xWndEnd)
+    {
+      int intrWndX = info.wndX + ((info.dir == IntrInfo::RIGHT) ? 1 : 0);
+      int insertionX = xWndStart + intrWndX;
+      for(int x = xWndEnd-1; x >= insertionX; x--)
+      {
+        mat.at<char>(y, x) = mat.at<char>(y, x-1);
+        matInt.at<char>(y, x) = matInt.at<char>(y, x-1);
+      }
+
+      mat.at<char>(y, insertionX)    = info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2);
+      matInt.at<char>(y, insertionX) = info.baseIntVal;
+    }
+
+
+    void interpolate(cv::Mat &original, cv::Mat &result, int sWndSize, int insertions, bool circular, int gradThresh, InterpolationPriority intrPriority = InterpolationPriority::FARTHEST)
     {
       if(original.cols % sWndSize != 0)
       {
@@ -239,7 +266,7 @@ class RiInterpolator
       int xIter = original.cols / sWndSize;
       int riCols = original.cols;
       int intrCols = xIter * (sWndSize+insertions);
-      cv::Mat outRi(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
+      result = cv::Mat(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
 
       debug_print("xIter: %d, riCols: %d", xIter, riCols);
 
@@ -268,7 +295,7 @@ class RiInterpolator
           for(int x=xWndStart, xWndIdx=0, intrX=xIntrWndStart; x < xWndEnd; x++, xWndIdx++, intrX++) // iterations in each X window...
           {
             curP = original.at<char>(y, x);
-            outRi.at<char>(y, intrX) = curP;
+            result.at<char>(y, intrX) = curP;
 
             if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
             {
@@ -328,10 +355,22 @@ class RiInterpolator
           int zIntrBase = nzIntrInfos.size();
           int ivIntrBase = nzIntrInfos.size() + zIntrInfos.size();
 
-          std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseVal);
-          if(insertions > (int)nzIntrInfos.size())
+          if(intrPriority == FARTHEST)
           {
-            std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseVal);
+            std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseValDesc);
+            if(insertions > (int)nzIntrInfos.size())
+            {
+              std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseValDesc);
+            }
+          }
+
+          if(intrPriority == NEAREST)
+          {
+            std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseValAsc);
+            if(insertions > (int)nzIntrInfos.size())
+            {
+              std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseValAsc);
+            }
           }
 
           for(int insertion = 0; insertion < insertions; insertion++)
@@ -349,12 +388,159 @@ class RiInterpolator
 
           for(int insertion = 0; insertion < insertions; insertion++)
           {
-              interpolateInWnd(outRi, intrInfos[insertion], y, xIntrWndStart, xIntrWndEnd);
+              interpolateInWnd(result, intrInfos[insertion], y, xIntrWndStart, xIntrWndEnd);
           }
         }
       }
+    }
 
-      return outRi;
+
+    void interpolate(cv::Mat &original, cv::Mat &originalInt, cv::Mat &result, cv::Mat &resultInt,
+        int sWndSize, int insertions, bool circular, int gradThresh,
+        InterpolationPriority intrPriority = InterpolationPriority::FARTHEST)
+    {
+      if(original.cols % sWndSize != 0)
+      {
+        debug_print("invalid sWndSize: original.cols %d, sWndSize %d", original.cols, sWndSize);
+        exit(0);
+      }
+
+      int xIter = original.cols / sWndSize;
+      int riCols = original.cols;
+      int intrCols = xIter * (sWndSize+insertions);
+      result    = cv::Mat(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
+      resultInt = cv::Mat(originalInt.rows, intrCols, CV_8UC1, cv::Scalar(0));
+
+      debug_print("xIter: %d, riCols: %d", xIter, riCols);
+
+      for(int y = 0; y < original.rows; y++) // column iteration...
+      {
+        for(int xWnd = 0; xWnd < xIter; xWnd++) // X windows (row) iteration...
+        {
+
+          /* 1. Find the interpolation info */
+          int xWndStart     = xWnd     * sWndSize;
+          int xWndEnd       = (xWnd+1) * sWndSize;
+          int xIntrWndStart = xWnd     * (sWndSize+insertions);
+          int xIntrWndEnd   = (xWnd+1) * (sWndSize+insertions);
+
+          char curP, curInt;
+          int zNextX, zPrevX;
+
+          int nextGrad, prevGrad, leastGrad;
+
+          // Interpolation Infos within a window...
+          std::vector<IntrInfo> nzIntrInfos;
+          std::vector<IntrInfo> zIntrInfos;
+          std::vector<IntrInfo> ivIntrInfos;
+          std::vector<IntrInfo> intrInfos;
+
+          for(int x=xWndStart, xWndIdx=0, intrX=xIntrWndStart; x < xWndEnd; x++, xWndIdx++, intrX++) // iterations in each X window...
+          {
+            curP = original.at<char>(y, x);
+            result.at<char>(y, intrX) = curP;
+
+            curInt = originalInt.at<char>(y, x);
+            resultInt.at<char>(y, intrX) = curInt;
+
+            if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
+            {
+              nextGrad = getNextGradient(y, x, original, circular, gradThresh);
+              prevGrad = getPrevGradient(y, x, original, circular, gradThresh);
+            }
+            else // NZ -- next
+            {
+              nextGrad = getNextGradient(y, x, original, circular, gradThresh);
+              prevGrad = INVALID_GRADIENT;
+            }
+
+            if(nextGrad != INVALID_GRADIENT && prevGrad != INVALID_GRADIENT)
+              leastGrad = (abs(nextGrad) < abs(prevGrad)) ? nextGrad : prevGrad;
+            else if(nextGrad == INVALID_GRADIENT && prevGrad != INVALID_GRADIENT)
+              leastGrad = prevGrad;
+            else if(nextGrad != INVALID_GRADIENT && prevGrad == INVALID_GRADIENT)
+              leastGrad = nextGrad;
+            else
+              leastGrad = INVALID_GRADIENT;
+
+            IntrInfo intrInfo;
+            if(leastGrad == INVALID_GRADIENT || leastGrad == -INVALID_GRADIENT) // ivIntrInfos
+            {
+              intrInfo.gradient = 0;
+              intrInfo.wndX = xWndIdx;
+              intrInfo.wndY = y;
+              intrInfo.dir  = IntrInfo::RIGHT;
+              intrInfo.baseVal = 0;
+              intrInfo.baseIntVal = 0;
+              ivIntrInfos.push_back(intrInfo);
+            }
+            else
+            {
+              intrInfo.gradient = leastGrad;
+              intrInfo.wndX = xWndIdx;
+              intrInfo.wndY = y;
+              intrInfo.dir  = (abs(nextGrad) < abs(prevGrad)) ? IntrInfo::RIGHT : IntrInfo::LEFT;
+              if(curP == 0) // zIntrInfos
+              {
+                zNextX = getRiX(x, riCols, 1, circular);
+                zPrevX = getRiX(x, riCols, -1, circular);
+                intrInfo.baseVal    = (abs(nextGrad) < abs(prevGrad)) ? original.at<char>(y, zNextX) : original.at<char>(y, zPrevX);
+                intrInfo.baseIntVal = (abs(nextGrad) < abs(prevGrad)) ? originalInt.at<char>(y, zNextX) : originalInt.at<char>(y, zPrevX);
+                zIntrInfos.push_back(intrInfo);
+              }
+              else // nzIntrInfos
+              {
+                intrInfo.baseVal = curP;
+                intrInfo.baseIntVal = curInt;
+                nzIntrInfos.push_back(intrInfo);
+              }
+            }
+          }
+
+
+          // Sort nzIntrInfos, zIntrInfos by farthest priority
+          // | nzIntrInfos | zIntrInfos | ivIntrInfos |
+          // |     insertions     |
+          int zIntrBase = nzIntrInfos.size();
+          int ivIntrBase = nzIntrInfos.size() + zIntrInfos.size();
+
+          if(intrPriority == FARTHEST)
+          {
+            std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseValDesc);
+            if(insertions > (int)nzIntrInfos.size())
+            {
+              std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseValDesc);
+            }
+          }
+
+          if(intrPriority == NEAREST)
+          {
+            std::sort(nzIntrInfos.begin(), nzIntrInfos.end(), IntrInfo::compareBaseValAsc);
+            if(insertions > (int)nzIntrInfos.size())
+            {
+              std::sort(zIntrInfos.begin(), zIntrInfos.end(), IntrInfo::compareBaseValAsc);
+            }
+          }
+
+          for(int insertion = 0; insertion < insertions; insertion++)
+          {
+            IntrInfo curInfo;
+            if(insertion < zIntrBase)
+              curInfo = nzIntrInfos[insertion];
+            else if(zIntrBase <= insertion && insertion < ivIntrBase)
+              curInfo = zIntrInfos[insertion-zIntrBase];
+            else
+              curInfo = ivIntrInfos[insertion-ivIntrBase];
+            intrInfos.push_back(curInfo);
+          }
+          std::sort(intrInfos.begin(), intrInfos.end(), IntrInfo::compareWndX);
+
+          for(int insertion = 0; insertion < insertions; insertion++)
+          {
+              interpolateInWnd(result, resultInt, intrInfos[insertion], y, xIntrWndStart, xIntrWndEnd);
+          }
+        }
+      }
     }
 
 

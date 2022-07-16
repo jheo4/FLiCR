@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     RiInterpolator riInterpolator;
     double st, et;
     st = getTsNow();
-    normIntrRi = riInterpolator.interpolate(normOrigRi, 4, 3, true, 3);
+    riInterpolator.interpolate(normOrigRi, normIntrRi, 4, 3, true, 3, RiInterpolator::NEAREST);
     et = getTsNow();
     debug_print("interpolate lat: %f", et-st);
 

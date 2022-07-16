@@ -20,7 +20,8 @@ int main()
   testMat.at<uchar>(0, 7) = 6 ;
   cout << testMat << endl;
 
-  cv::Mat intrMat = riInterpolator.interpolate(testMat, 4, 2, true, 4);
+  cv::Mat intrMat;
+  riInterpolator.interpolate(testMat, intrMat, 4, 2, true, 4);
   cout << intrMat << endl;
 
 
