@@ -14,6 +14,9 @@ class Visualizer
   protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
   public:
+    std::string fn;
+    int imgIdx;
+
     Visualizer();
     ~Visualizer();
     void initViewerXyz();
@@ -24,6 +27,18 @@ class Visualizer
     void setViewerXyz(int x, int y, int z);
     void show(int tickPeriod=100);
     void saveToFile(std::string fileName);
+
+    void static keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event, void* curVisualizer)
+    {
+      Visualizer *visualizer = (Visualizer*)(curVisualizer);
+      if (event.getKeySym () == "s" && event.keyDown ())
+      {
+        std::string fileName = visualizer->fn + "_" + std::to_string(visualizer->imgIdx) + ".png";
+        std::cout << "SAVE Screenshot as " << fileName << std::endl;
+        visualizer->viewer->saveScreenshot(fileName);
+        visualizer->imgIdx++;
+      }
+    }
 };
 }
 

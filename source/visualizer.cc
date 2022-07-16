@@ -5,6 +5,8 @@ using namespace flicr;
 Visualizer::Visualizer()
 {
   viewer = nullptr;
+  fn = "fileName";
+  imgIdx = 0;
 }
 
 
@@ -18,6 +20,7 @@ void Visualizer::initViewerXyz()
 {
   viewer = pcl::visualization::PCLVisualizer::Ptr(new pcl::visualization::PCLVisualizer("PointCloudVisualizer"));
   viewer->setBackgroundColor(0, 0, 0);
+  viewer->registerKeyboardCallback(Visualizer::keyboardEventOccurred, this);
 }
 
 
