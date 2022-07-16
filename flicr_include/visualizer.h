@@ -25,7 +25,7 @@ class Visualizer
     void setViewer(types::PclMesh mesh);
     void setViewerBEV(int height=100);
     void setViewerXyz(int x, int y, int z);
-    void show(int tickPeriod=100);
+    void show(int tickPeriod);
     void saveToFile(std::string fileName);
 
     void static keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event, void* curVisualizer)

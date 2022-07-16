@@ -111,10 +111,10 @@ class RiInterpolator
     // INTER_CUBIC - a bicubic interpolation over 4x4 pixel neighborhood
     // INTER_LANCZOS4 - a Lanczos interpolation over 8x8 pixel neighborhood
     // INTER_AREA - resampling using pixel area relation. It may be a preferred method for image decimation, as it gives moire’-free results. But when the image is zoomed, it is similar to the INTER_NEAREST method.
-    cv::Mat cvInterpolate(cv::Mat original, int cvInterFormat)
+    cv::Mat cvInterpolate(cv::Mat original, int row, int col, int cvInterFormat)
     {
-      cv::Mat outRi(intrRow, intrCol, CV_8UC1, cv::Scalar(0));
-      cv::resize(original, outRi, cv::Size(intrCol, intrRow), cvInterFormat);
+      cv::Mat outRi(row, col, CV_8UC1, cv::Scalar(0));
+      cv::resize(original, outRi, cv::Size(col, row), cvInterFormat);
       return outRi;
     }
 

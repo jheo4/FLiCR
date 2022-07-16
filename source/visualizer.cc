@@ -84,7 +84,6 @@ void Visualizer::show(int tickPeriod)
   }
 }
 
-
 void Visualizer::saveToFile(std::string fileName)
 {
   if(viewer != nullptr)
