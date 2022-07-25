@@ -121,11 +121,11 @@ int main(int argc, char **argv)
     riConverter.denormalizeRi(normOrigRi, riMin, riMax, denormOrigRi);
     riConverter.denormalizeRi(intrNri, riMin, riMax, dIntrRi);
 
-    riConverter.denormalizeRi(linear, riMin, riMax, dlinear);
-    riConverter.denormalizeRi(nearest, riMin, riMax, nearest);
-    riConverter.denormalizeRi(cubic, riMin, riMax, dcubic);
+    riConverter.denormalizeRi(linear,  riMin, riMax, dlinear);
+    riConverter.denormalizeRi(nearest, riMin, riMax, dnearest);
+    riConverter.denormalizeRi(cubic,   riMin, riMax, dcubic);
     riConverter.denormalizeRi(lanzos4, riMin, riMax, dlanzos4);
-    riConverter.denormalizeRi(area, riMin, riMax, darea);
+    riConverter.denormalizeRi(area,    riMin, riMax, darea);
 
     RiConverter intrRiConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
         HDL64_THETA_PRECISION, (double)360/intrNri.cols,
@@ -137,13 +137,13 @@ int main(int argc, char **argv)
     types::PclPcXyz xyzlinear = intrRiConverter.reconstructPcFromRi(dlinear, true);
 
     visualizer.setViewer(xyzOrig);
-    visualizer.show();
+    visualizer.show(3000);
 
     visualizer.setViewer(xyzIntr);
-    visualizer.show();
+    visualizer.show(3000);
 
     visualizer.setViewer(xyzlinear);
-    visualizer.show();
+    visualizer.show(3000);
 
     pcXyzi->clear();
 
