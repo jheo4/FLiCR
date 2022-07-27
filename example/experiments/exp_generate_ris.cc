@@ -72,27 +72,31 @@ int main(int argc, char **argv)
     cv::Mat normImgRi[5], normImgIntMat[5];
     riInterpolator.interpolate(normOrigRi, normIntMat, normIntrRi, normIntrIntMat, 8, 4, true, 3, RiInterpolator::FARTHEST);
 
-    normImgRi[0] = riInterpolator.cvInterpolate(normOrigRi, normIntrRi.rows, normIntrRi.cols, cv::INTER_LINEAR);
-    normImgRi[1] = riInterpolator.cvInterpolate(normOrigRi, normIntrRi.rows, normIntrRi.cols, cv::INTER_NEAREST);
-    normImgRi[2] = riInterpolator.cvInterpolate(normOrigRi, normIntrRi.rows, normIntrRi.cols, cv::INTER_CUBIC);
-    normImgRi[3] = riInterpolator.cvInterpolate(normOrigRi, normIntrRi.rows, normIntrRi.cols, cv::INTER_LANCZOS4);
-    normImgRi[4] = riInterpolator.cvInterpolate(normOrigRi, normIntrRi.rows, normIntrRi.cols, cv::INTER_AREA);
+
+    cv::resize(normOrigRi, normImgRi[0], cv::Size(normIntrRi.cols, normIntrRi.rows), cv::INTER_LINEAR);
+    cv::resize(normOrigRi, normImgRi[1], cv::Size(normIntrRi.cols, normIntrRi.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normOrigRi, normImgRi[2], cv::Size(normIntrRi.cols, normIntrRi.rows), 0, 0, cv::INTER_CUBIC);
+    cv::resize(normOrigRi, normImgRi[3], cv::Size(normIntrRi.cols, normIntrRi.rows), 0, 0, cv::INTER_LANCZOS4);
+    cv::resize(normOrigRi, normImgRi[4], cv::Size(normIntrRi.cols, normIntrRi.rows), 0, 0, cv::INTER_AREA);
 
     /*
-    To test resized with original
-    normIntrRi   = riInterpolator.cvInterpolate(normIntrRi, normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
-    normImgRi[0] = riInterpolator.cvInterpolate(normImgRi[0], normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
-    normImgRi[1] = riInterpolator.cvInterpolate(normImgRi[1], normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
-    normImgRi[2] = riInterpolator.cvInterpolate(normImgRi[2], normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
-    normImgRi[3] = riInterpolator.cvInterpolate(normImgRi[3], normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
-    normImgRi[4] = riInterpolator.cvInterpolate(normImgRi[4], normOrigRi.rows, normOrigRi.cols, cv::INTER_LINEAR);
+    // To test resized with original
+    cv::resize(normIntrRi,   normIntrRi,   cv::Size(normOrigRi.cols, normOrigRi.rows),       cv::INTER_NEAREST);
+    cv::resize(normImgRi[0], normImgRi[0], cv::Size(normOrigRi.cols, normOrigRi.rows),       cv::INTER_NEAREST);
+    cv::resize(normImgRi[1], normImgRi[1], cv::Size(normOrigRi.cols, normOrigRi.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normImgRi[2], normImgRi[2], cv::Size(normOrigRi.cols, normOrigRi.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normImgRi[3], normImgRi[3], cv::Size(normOrigRi.cols, normOrigRi.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normImgRi[4], normImgRi[4], cv::Size(normOrigRi.cols, normOrigRi.rows), 0, 0, cv::INTER_NEAREST);
     */
 
+
+    /*
     normImgIntMat[0] = riInterpolator.cvInterpolate(normIntMat, normIntrIntMat.rows, normIntrIntMat.cols, cv::INTER_LINEAR);
     normImgIntMat[1] = riInterpolator.cvInterpolate(normIntMat, normIntrIntMat.rows, normIntrIntMat.cols, cv::INTER_NEAREST);
     normImgIntMat[2] = riInterpolator.cvInterpolate(normIntMat, normIntrIntMat.rows, normIntrIntMat.cols, cv::INTER_CUBIC);
     normImgIntMat[3] = riInterpolator.cvInterpolate(normIntMat, normIntrIntMat.rows, normIntrIntMat.cols, cv::INTER_LANCZOS4);
     normImgIntMat[4] = riInterpolator.cvInterpolate(normIntMat, normIntrIntMat.rows, normIntrIntMat.cols, cv::INTER_AREA);
+    */
 
     cv::imwrite(std::string("interpolation/myinter_")+std::to_string(idx)+std::string(".png"), normIntrRi);
     cv::imwrite(std::string("interpolation/linear_")+std::to_string(idx)+std::string(".png"),  normImgRi[0]);

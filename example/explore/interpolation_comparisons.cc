@@ -61,7 +61,9 @@ int main(int argc, char **argv)
     os.str(""); os.clear();
 
     types::PclPcXyzi pcXyzi;
+    types::PclPcXyz pcXyz;
     pcXyzi = pcReader.readXyziBin(fn);
+    pcXyz = pcReader.readXyzFromXyziBin(fn);
 
     double riMax, riMin, intMax, intMin;
     cv::Mat origRi, normOrigRi;
@@ -99,24 +101,36 @@ int main(int argc, char **argv)
     cv::imwrite("intrNri.jpg", intrNri);
     cv::imwrite("intrNintMat.jpg", intrNintMat);
 
-    cv::Mat linear  = riInterpolator.cvInterpolate(normOrigRi, 64, intrNri.cols, cv::INTER_LINEAR);
-    cv::Mat nearest = riInterpolator.cvInterpolate(normOrigRi, 64, intrNri.cols, cv::INTER_NEAREST);
-    cv::Mat cubic   = riInterpolator.cvInterpolate(normOrigRi, 64, intrNri.cols, cv::INTER_CUBIC);
-    cv::Mat lanzos4 = riInterpolator.cvInterpolate(normOrigRi, 64, intrNri.cols, cv::INTER_LANCZOS4);
-    cv::Mat area    = riInterpolator.cvInterpolate(normOrigRi, 64, intrNri.cols, cv::INTER_AREA);
+    cv::Mat linear;
+    cv::Mat nearest;
+    cv::Mat cubic;
+    cv::Mat lanzos4;
+    cv::Mat area;
 
-    cv::Mat linearInt  = riInterpolator.cvInterpolate(normIntMat, 64, intrNri.cols, cv::INTER_LINEAR);
-    cv::Mat nearestInt = riInterpolator.cvInterpolate(normIntMat, 64, intrNri.cols, cv::INTER_NEAREST);
-    cv::Mat cubicInt   = riInterpolator.cvInterpolate(normIntMat, 64, intrNri.cols, cv::INTER_CUBIC);
-    cv::Mat lanzos4Int = riInterpolator.cvInterpolate(normIntMat, 64, intrNri.cols, cv::INTER_LANCZOS4);
-    cv::Mat areaInt    = riInterpolator.cvInterpolate(normIntMat, 64, intrNri.cols, cv::INTER_AREA);
+    cv::Mat linearInt ;
+    cv::Mat nearestInt;
+    cv::Mat cubicInt  ;
+    cv::Mat lanzos4Int;
+    cv::Mat areaInt   ;
 
-    cv::Mat dlinear ;
-    cv::Mat dnearest;
-    cv::Mat dcubic  ;
-    cv::Mat dlanzos4;
-    cv::Mat darea   ;
-    cv::Mat dbits   ;
+    cv::resize(normOrigRi, linear , cv::Size(intrNri.cols, intrNri.rows), cv::INTER_LINEAR);
+    cv::resize(normOrigRi, nearest, cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normOrigRi, cubic  , cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_CUBIC);
+    cv::resize(normOrigRi, lanzos4, cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_LANCZOS4);
+    cv::resize(normOrigRi, area   , cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_AREA);
+
+    cv::resize(normIntMat, linearInt , cv::Size(normIntMat.cols, normIntMat.rows), cv::INTER_LINEAR);
+    cv::resize(normIntMat, nearestInt, cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_NEAREST);
+    cv::resize(normIntMat, cubicInt  , cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_CUBIC);
+    cv::resize(normIntMat, lanzos4Int, cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_LANCZOS4);
+    cv::resize(normIntMat, areaInt   , cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_AREA);
+
+    cv::Mat dlinear  ;
+    cv::Mat dnearest ;
+    cv::Mat dcubic   ;
+    cv::Mat dlanczos4;
+    cv::Mat darea    ;
+    cv::Mat dbits    ;
 
     riConverter.denormalizeRi(normOrigRi, riMin, riMax, denormOrigRi);
     riConverter.denormalizeRi(intrNri, riMin, riMax, dIntrRi);
@@ -124,7 +138,7 @@ int main(int argc, char **argv)
     riConverter.denormalizeRi(linear,  riMin, riMax, dlinear);
     riConverter.denormalizeRi(nearest, riMin, riMax, dnearest);
     riConverter.denormalizeRi(cubic,   riMin, riMax, dcubic);
-    riConverter.denormalizeRi(lanzos4, riMin, riMax, dlanzos4);
+    riConverter.denormalizeRi(lanzos4, riMin, riMax, dlanczos4);
     riConverter.denormalizeRi(area,    riMin, riMax, darea);
 
     RiConverter intrRiConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
@@ -132,19 +146,45 @@ int main(int argc, char **argv)
         HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
         HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
-    types::PclPcXyz xyzOrig   = riConverter.reconstructPcFromRi(denormOrigRi, true);
-    types::PclPcXyz xyzIntr   = intrRiConverter.reconstructPcFromRi(dIntrRi, true);
-    types::PclPcXyz xyzlinear = intrRiConverter.reconstructPcFromRi(dlinear, true);
+    types::PclPcXyz xyzOrig    = riConverter.reconstructPcFromRi(denormOrigRi, true);
+    types::PclPcXyz xyzIntr    = intrRiConverter.reconstructPcFromRi(dIntrRi, true);
+    types::PclPcXyz xyzlinear  = intrRiConverter.reconstructPcFromRi(dlinear, true);
+    types::PclPcXyz xyznearest = intrRiConverter.reconstructPcFromRi(dnearest, true);
+    types::PclPcXyz xyzcubic = intrRiConverter.reconstructPcFromRi(dcubic, true);
+    types::PclPcXyz xyzlanczos = intrRiConverter.reconstructPcFromRi(dlanczos4, true);
+    types::PclPcXyz xyzarea = intrRiConverter.reconstructPcFromRi(darea, true);
+
+    visualizer.setViewer(pcXyz);
+    visualizer.saveToFile("0raw.png");
+    visualizer.show(3000);
 
     visualizer.setViewer(xyzOrig);
+    visualizer.saveToFile("1orig.png");
     visualizer.show(3000);
 
     visualizer.setViewer(xyzIntr);
+    visualizer.saveToFile("2myinter.png");
     visualizer.show(3000);
 
     visualizer.setViewer(xyzlinear);
+    visualizer.saveToFile("3linear.png");
     visualizer.show(3000);
 
+    visualizer.setViewer(xyznearest);
+    visualizer.saveToFile("4nearest.png");
+    visualizer.show(3000);
+
+    visualizer.setViewer(xyzcubic);
+    visualizer.saveToFile("4cubic.png");
+    visualizer.show(3000);
+
+    visualizer.setViewer(xyzlanczos);
+    visualizer.saveToFile("5lanczos.png");
+    visualizer.show(3000);
+
+    visualizer.setViewer(xyzarea);
+    visualizer.saveToFile("5area.png");
+    visualizer.show(3000);
     pcXyzi->clear();
 
     origRi.release();
