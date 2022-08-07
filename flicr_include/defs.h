@@ -26,8 +26,8 @@
 #define HDL64_VERTICAL_DEGREE   26.8f
 #define HDL64_HORIZONTAL_DEGREE 360.0f
 
-#define HDL64_MIN_RANGE 0
-#define HDL64_MAX_RANGE 80
+#define HDL64_MIN_RANGE 1
+#define HDL64_MAX_RANGE 80.5
 
 
 #define debug_print(...) do { \

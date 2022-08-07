@@ -40,6 +40,21 @@ void PcWriter::writeBin(std::string fileName, types::PclPcXyzi pc)
 }
 
 
+void PcWriter::writeBin(std::string path, std::string fileName, types::PclPcXyzi pc)
+{
+  boost::filesystem::path dir(path);
+
+  if(!(boost::filesystem::exists(dir))){
+    std::cout<<"Doesn't Exists"<<std::endl;
+
+    if (boost::filesystem::create_directories(dir))
+      std::cout << path << " is created..." << std::endl;
+  }
+
+  writeBin(path + "/" + fileName, pc);
+}
+
+
 void PcWriter::writePcd(std::string fileName, types::PclPcXyz pc, bool compress)
 {
   if(compress)

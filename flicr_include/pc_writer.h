@@ -6,6 +6,7 @@
 #include <pcl/surface/organized_fast_mesh.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/io/obj_io.h>
+#include <boost/filesystem.hpp>
 
 #include <types.h>
 #include <defs.h>
@@ -17,6 +18,7 @@ class PcWriter
   public:
     void writeBin(std::string fileName, types::PclPcXyz pc);
     void writeBin(std::string fileName, types::PclPcXyzi pc);
+    void writeBin(std::string path, std::string fileName, types::PclPcXyzi pc);
 
     void writePcd(std::string fileName, types::PclPcXyz pc, bool compress);
     void writePcd(std::string fileName, types::PclPcXyzi pc, bool compress);
