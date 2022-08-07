@@ -17,38 +17,40 @@ void RiConverter::setConfig(double minRange,          double maxRange,
                             double thetaDegree,       double piDegree,
                             double thetaDegreeOffset, double piDegreeOffset)
 {
+  // Min-Max range of a sensor
   this->minRange             = minRange;
   this->maxRange             = maxRange;
+
+  // Theta (y, row) precision, Pi (x, col) precision
   this->thetaPrecision       = thetaPrecision;
   this->piPrecision          = piPrecision;
+
+  // Theta degree: Y sensing degree
+  // Pi degree   : X sensing degree
   this->thetaDegree          = thetaDegree;
   this->piDegree             = piDegree;
+
+  // Theta (y) degree offset
+  // Pi (x) degree offset
   this->thetaDegreeOffset    = thetaDegreeOffset;
   this->piDegreeOffset       = piDegreeOffset;
-
-  this->thetaOffset = thetaDegreeOffset/thetaPrecision;
-  this->piOffset    = piDegreeOffset   /piPrecision;
 
   this->riRow = thetaDegree / thetaPrecision;
   this->riCol = piDegree    / piPrecision;
 }
 
 
+void RiConverter::setResolution(int row, int col)
+{
+  this->thetaPrecision = (double)this->thetaDegree/row;
+  this->piPrecision    = (double)this->piDegree/col;
+  this->riRow = row;
+  this->riCol = col;
+}
+
+
 void RiConverter::XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRow, int &piCol)
 {
-  /*
-    float rTheta = std::acos(z/rho);
-    float rPi    = std::atan2(y, x);
-
-    float theta  = RAD2DEGREE(rTheta);
-    float pi     = RAD2DEGREE(rPi);
-
-    float nTheta = theta + thetaDegreeOffset;
-    float nPi    = pi + piDegreeOffset;
-
-    int rowIdx = std::min(ri->rows-1, std::max(0, (int)(nTheta/thetaPrecision)));
-    int colIdx = std::min(ri->cols-1, std::max(0, (int)(nPi/piPrecision)));
-  */
   rho    = std::sqrt(x*x + y*y + z*z);
   thetaRow = (int)((RAD2DEGREE(std::acos(z/rho))+thetaDegreeOffset) / thetaPrecision);
   piCol    = (int)((RAD2DEGREE(std::atan2(y, x))+piDegreeOffset)    / piPrecision);
@@ -57,17 +59,6 @@ void RiConverter::XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRo
 
 void RiConverter::RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float &y, float &z)
 {
-  /*
-  float nTheta = (thetaRow * thetaPrecision);
-  float nPi    = (piCol * piPrecision);
-
-  float theta = (thetaRow * thetaPrecision) - thetaDegreeOffset;
-  float pi    = (piCol    * piPrecision)    - piDegreeOffset;
-
-  float rTheta = DEGREE2RAD(theta);
-  float rPi    = DEGREE2RAD(pi);
-  */
-
   float dTheta = (thetaRow * thetaPrecision) - thetaDegreeOffset;
   float dPi    = (piCol    * piPrecision)    - piDegreeOffset;
 
@@ -100,7 +91,10 @@ void RiConverter::convertRawPc2Ri(types::RawPc inPc, cv::Mat &outRi, bool parall
     int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
     int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    outRi.at<float>(rowIdx, colIdx) = rho;
+    if(outRi.at<float>(rowIdx, colIdx) == 0)
+      outRi.at<float>(rowIdx, colIdx) = rho;
+    else if(rho > outRi.at<float>(rowIdx, colIdx))
+      outRi.at<float>(rowIdx, colIdx) = rho;
   }
 }
 
@@ -124,7 +118,10 @@ void RiConverter::convertPc2Ri(types::PclPcXyz inPc, cv::Mat &outRi, bool parall
     int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
     int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    outRi.at<float>(rowIdx, colIdx) = rho;
+    if(outRi.at<float>(rowIdx, colIdx) == 0)
+      outRi.at<float>(rowIdx, colIdx) = rho;
+    else if(rho > outRi.at<float>(rowIdx, colIdx))
+      outRi.at<float>(rowIdx, colIdx) = rho;
   }
 }
 
@@ -148,8 +145,16 @@ void RiConverter::convertPc2RiWithI(types::PclPcXyzi inPc, cv::Mat &outRi, bool 
     int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
     int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
-    outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
+    if(outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] == 0)
+    {
+      outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
+      outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
+    }
+    else if(rho > outRi.at<cv::Vec2f>(rowIdx, colIdx)[0])
+    {
+      outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
+      outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
+    }
   }
 }
 
@@ -174,8 +179,16 @@ void RiConverter::convertPc2RiWithIm(types::PclPcXyzi inPc, cv::Mat &outRi, cv::
     int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
     int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
 
-    outRi.at<float>(rowIdx, colIdx) = rho;
-    outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
+    if(outRi.at<float>(rowIdx, colIdx) == 0)
+    {
+      outRi.at<float>(rowIdx, colIdx) = rho;
+      outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
+    }
+    else if(rho > outRi.at<float>(rowIdx, colIdx))
+    {
+      outRi.at<float>(rowIdx, colIdx) = rho;
+      outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
+    }
   }
 }
 
@@ -366,6 +379,33 @@ void RiConverter::normalizeRiWithI(cv::Mat &origRiWithI, cv::Mat &normRi, cv::Ma
   cv::normalize(riChannels[1], intMap, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 }
 
+void RiConverter::quantizeMat(cv::Mat &origMat, int bytes, cv::Mat &outMat, double &outMin, double &outMax)
+{
+  cv::Point minP, maxP;
+  cv::minMaxLoc(origMat, &outMin, &outMax, &minP, &maxP);
+
+  if(bytes == 1)
+    cv::normalize(origMat, outMat, 0, 0xff, cv::NORM_MINMAX, CV_8UC1);
+  else if(bytes == 2)
+    cv::normalize(origMat, outMat, 0, 0xffff, cv::NORM_MINMAX, CV_16UC1);
+  else if(bytes == 3)
+    cv::normalize(origMat, outMat, 0x00000000, 0x00ffffff, cv::NORM_MINMAX, CV_32SC1);
+  else if(bytes == 4)
+    cv::normalize(origMat, outMat, 0x00000000, 0xffffffff, cv::NORM_MINMAX, CV_32SC1);
+  else if(bytes == 5)
+    cv::normalize(origMat, outMat, 0x0000000000000000, 0x000000ffffffffff, cv::NORM_MINMAX, CV_64FC1);
+  else if(bytes == 6)
+    cv::normalize(origMat, outMat, 0x0000000000000000, 0x0000ffffffffffff, cv::NORM_MINMAX, CV_64FC1);
+  else if(bytes == 7)
+    cv::normalize(origMat, outMat, 0x0000000000000000, 0x00ffffffffffffff, cv::NORM_MINMAX, CV_64FC1);
+  else
+    cv::normalize(origMat, outMat, 0x0000000000000000, 0xffffffffffffffff, cv::NORM_MINMAX, CV_64FC1);
+}
+
+void RiConverter::dequantizeMat(cv::Mat &quantMat, double min, double max, cv::Mat &dequantMat)
+{
+  cv::normalize(quantMat, dequantMat, min, max, cv::NORM_MINMAX, CV_32FC1);
+}
 
 void RiConverter::denormalizeRi(cv::Mat &normRi, double minRho, double maxRho, cv::Mat &denormRi)
 {

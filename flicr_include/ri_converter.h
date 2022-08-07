@@ -14,6 +14,7 @@ class RiConverter
 {
   public:
     int riRow, riCol;
+    // Theta (y, row), Pi (x, col)
     double thetaPrecision,    piPrecision;
     double thetaDegree,       piDegree;
     double thetaDegreeOffset, piDegreeOffset;
@@ -33,6 +34,7 @@ class RiConverter
                    double thetaPrecision,    double piPrecision,
                    double thetaDegree,       double piDegree,
                    double thetaDegreeOffset, double piDegreeOffset);
+    void setResolution(int row, int col);
 
     void XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRow, int &piCol);
     void RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float &y, float &z);
@@ -56,6 +58,9 @@ class RiConverter
     void denormalizeRi(cv::Mat &normRi, double minRho, double maxRho, cv::Mat &denormRi);
     void denormalizeRiWithI(cv::Mat &normRiWithI, double maxRho, double maxInt, cv::Mat &denormRiWithI);
     void denormalizeRiWithI(cv::Mat &normRi, cv::Mat &intMap, double maxRho, double maxInt, cv::Mat &denormRiWithI);
+
+    void quantizeMat(cv::Mat &origMat, int bytes, cv::Mat &outMat, double &outMin, double &outMax);
+    void dequantizeMat(cv::Mat &quantMat, double min, double max, cv::Mat &dequantMat);
 
     enum FileFormat {PNG, PPM};
     void saveRiToFile(cv::Mat ri, std::string fileName, FileFormat format = PNG);

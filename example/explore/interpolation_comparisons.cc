@@ -6,6 +6,7 @@
 using namespace std;
 using namespace flicr;
 
+
 int main(int argc, char **argv)
 {
   cxxopts::Options options("FLiCR", "FLiCR");
@@ -65,46 +66,26 @@ int main(int argc, char **argv)
     pcXyzi = pcReader.readXyziBin(fn);
     pcXyz = pcReader.readXyzFromXyziBin(fn);
 
-    double riMax, riMin, intMax, intMin;
-    cv::Mat origRi, normOrigRi;
-    cv::Mat intMat, normIntMat;
-    cv::Mat denormOrigRi, denormIntMat;
+    cv::Mat origRi;
+    cv::Mat intMat;
 
-    cv::Mat intrNri, dIntrRi;
-    cv::Mat intrNintMat;
+    cv::Mat intrRi;
+    cv::Mat intrIntMat;
 
     riConverter.convertPc2RiWithIm(pcXyzi, origRi, intMat, true); // pcXyzi -> RI & intMat
-    riConverter.normalizeRi(origRi, normOrigRi, riMin, riMax);
-    riConverter.normalizeRi(intMat, normIntMat, intMin, intMax);
 
-    debug_print("riMin/Max: %f %f", riMin, riMax);
-    debug_print("intMin/Max: %f %f", intMin, intMax);
-
-    RiInterpolator riInterpolator;
+    RiInterpolator<float> riInterpolator;
     double st, et;
     st = getTsNow();
-    riInterpolator.interpolate(normOrigRi, normIntMat, intrNri, intrNintMat, 4, 3, true, 3, RiInterpolator::FARTHEST);
+    riInterpolator.interpolate(origRi, intMat, intrRi, intrIntMat, 8, 4, true, 2, riInterpolator.FARTHEST);
     et = getTsNow();
     debug_print("interpolate lat: %f", et-st);
-
-    debug_print("intrNormRi size: %d x %d", intrNri.rows, intrNri.cols);
-    cv::imshow("normOrigRi", normOrigRi);
-    cv::imshow("normIntMat", normIntMat);
-
-    cv::imshow("intrNri", intrNri);
-    cv::imshow("intrNintMat", intrNintMat);
-
-    cv::waitKey();
-
-    cv::imwrite("normOrigRi.jpg", normOrigRi);
-    cv::imwrite("normIntMat.jpg", normIntMat);
-    cv::imwrite("intrNri.jpg", intrNri);
-    cv::imwrite("intrNintMat.jpg", intrNintMat);
+    debug_print("interpolated size: %dx%d --> %dx%d", origRi.cols, origRi.rows, intrRi.cols, intrRi.rows);
 
     cv::Mat linear;
     cv::Mat nearest;
     cv::Mat cubic;
-    cv::Mat lanzos4;
+    cv::Mat lanczos4;
     cv::Mat area;
 
     cv::Mat linearInt ;
@@ -113,87 +94,62 @@ int main(int argc, char **argv)
     cv::Mat lanzos4Int;
     cv::Mat areaInt   ;
 
-    cv::resize(normOrigRi, linear , cv::Size(intrNri.cols, intrNri.rows), cv::INTER_LINEAR);
-    cv::resize(normOrigRi, nearest, cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_NEAREST);
-    cv::resize(normOrigRi, cubic  , cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_CUBIC);
-    cv::resize(normOrigRi, lanzos4, cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_LANCZOS4);
-    cv::resize(normOrigRi, area   , cv::Size(intrNri.cols, intrNri.rows), 0, 0, cv::INTER_AREA);
-
-    cv::resize(normIntMat, linearInt , cv::Size(normIntMat.cols, normIntMat.rows), cv::INTER_LINEAR);
-    cv::resize(normIntMat, nearestInt, cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_NEAREST);
-    cv::resize(normIntMat, cubicInt  , cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_CUBIC);
-    cv::resize(normIntMat, lanzos4Int, cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_LANCZOS4);
-    cv::resize(normIntMat, areaInt   , cv::Size(normIntMat.cols, normIntMat.rows), 0, 0, cv::INTER_AREA);
-
-    cv::Mat dlinear  ;
-    cv::Mat dnearest ;
-    cv::Mat dcubic   ;
-    cv::Mat dlanczos4;
-    cv::Mat darea    ;
-    cv::Mat dbits    ;
-
-    riConverter.denormalizeRi(normOrigRi, riMin, riMax, denormOrigRi);
-    riConverter.denormalizeRi(intrNri, riMin, riMax, dIntrRi);
-
-    riConverter.denormalizeRi(linear,  riMin, riMax, dlinear);
-    riConverter.denormalizeRi(nearest, riMin, riMax, dnearest);
-    riConverter.denormalizeRi(cubic,   riMin, riMax, dcubic);
-    riConverter.denormalizeRi(lanzos4, riMin, riMax, dlanczos4);
-    riConverter.denormalizeRi(area,    riMin, riMax, darea);
+    cv::resize(origRi, linear ,  cv::Size(intrRi.cols, 64), cv::INTER_LINEAR);
+    st = getTsNow();
+    cv::resize(origRi, nearest,  cv::Size(intrRi.cols, 64), 0, 0, cv::INTER_NEAREST);
+    et = getTsNow();
+    debug_print("nearest interpolate lat: %f", et-st);
+    cv::resize(origRi, cubic  ,  cv::Size(intrRi.cols, 64), 0, 0, cv::INTER_CUBIC);
+    cv::resize(origRi, lanczos4, cv::Size(intrRi.cols, 64), 0, 0, cv::INTER_LANCZOS4);
+    cv::resize(origRi, area   ,  cv::Size(intrRi.cols, 64), 0, 0, cv::INTER_AREA);
 
     RiConverter intrRiConverter(HDL64_MIN_RANGE, HDL64_MAX_RANGE,
-        HDL64_THETA_PRECISION, (double)360/intrNri.cols,
+        HDL64_THETA_PRECISION, (double)360/intrRi.cols,
         HDL64_VERTICAL_DEGREE, HDL64_HORIZONTAL_DEGREE,
         HDL64_VERTICAL_DEGREE_OFFSET, HDL64_HORIZONTAL_DEGREE_OFFSET);
 
-    types::PclPcXyz xyzOrig    = riConverter.reconstructPcFromRi(denormOrigRi, true);
-    types::PclPcXyz xyzIntr    = intrRiConverter.reconstructPcFromRi(dIntrRi, true);
-    types::PclPcXyz xyzlinear  = intrRiConverter.reconstructPcFromRi(dlinear, true);
-    types::PclPcXyz xyznearest = intrRiConverter.reconstructPcFromRi(dnearest, true);
-    types::PclPcXyz xyzcubic = intrRiConverter.reconstructPcFromRi(dcubic, true);
-    types::PclPcXyz xyzlanczos = intrRiConverter.reconstructPcFromRi(dlanczos4, true);
-    types::PclPcXyz xyzarea = intrRiConverter.reconstructPcFromRi(darea, true);
+    types::PclPcXyz xyzOrig    = riConverter.reconstructPcFromRi(origRi, true);
+    types::PclPcXyz xyzIntr    = intrRiConverter.reconstructPcFromRi(intrRi, true);
+    types::PclPcXyz xyzlinear  = intrRiConverter.reconstructPcFromRi(linear, true);
+    types::PclPcXyz xyznearest = intrRiConverter.reconstructPcFromRi(nearest, true);
+    types::PclPcXyz xyzcubic   = intrRiConverter.reconstructPcFromRi(cubic, true);
+    types::PclPcXyz xyzlanczos = intrRiConverter.reconstructPcFromRi(lanczos4, true);
+    types::PclPcXyz xyzarea    = intrRiConverter.reconstructPcFromRi(area, true);
 
     visualizer.setViewer(pcXyz);
     visualizer.saveToFile("0raw.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyzOrig);
     visualizer.saveToFile("1orig.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyzIntr);
-    visualizer.saveToFile("2myinter.png");
-    visualizer.show(3000);
+    visualizer.saveToFile("2intr.png");
+    visualizer.show(300);
 
     visualizer.setViewer(xyzlinear);
     visualizer.saveToFile("3linear.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyznearest);
     visualizer.saveToFile("4nearest.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyzcubic);
     visualizer.saveToFile("4cubic.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyzlanczos);
     visualizer.saveToFile("5lanczos.png");
-    visualizer.show(3000);
+    visualizer.show(300);
 
     visualizer.setViewer(xyzarea);
     visualizer.saveToFile("5area.png");
-    visualizer.show(3000);
+    visualizer.show(300);
     pcXyzi->clear();
 
     origRi.release();
-    normOrigRi.release();
-    denormOrigRi.release();
-
-    intrNri.release();
-    dIntrRi.release();
-
     printProgress((float)idx/(float)numScans);
 
     os.flush();

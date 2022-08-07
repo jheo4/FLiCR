@@ -84,10 +84,10 @@ int main(int argc, char **argv)
     recXyz = riConverter.reconstructPcFromRi(denormOrigRi, true);
 
 
-    RiInterpolator riInterpolator;
+    RiInterpolator<uint8_t> riInterpolator;
     double st, et;
     st = getTsNow();
-    riInterpolator.interpolate(normOrigRi, normIntrRi, 4, 3, true, 3, RiInterpolator::NEAREST);
+    riInterpolator.interpolate(normOrigRi, normIntrRi, 4, 3, true, 3, riInterpolator.NEAREST);
     et = getTsNow();
     debug_print("interpolate lat: %f", et-st);
 

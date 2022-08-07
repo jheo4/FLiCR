@@ -67,10 +67,10 @@ int main(int argc, char **argv)
 
     cv::imwrite(std::string("interpolation/original_")+std::to_string(idx)+std::string(".png"), normOrigRi);
 
-    RiInterpolator riInterpolator;
+    RiInterpolator<uint8_t> riInterpolator;
     cv::Mat normIntrRi, normIntrIntMat;
     cv::Mat normImgRi[5], normImgIntMat[5];
-    riInterpolator.interpolate(normOrigRi, normIntMat, normIntrRi, normIntrIntMat, 8, 4, true, 3, RiInterpolator::FARTHEST);
+    riInterpolator.interpolate(normOrigRi, normIntMat, normIntrRi, normIntrIntMat, 8, 4, true, 3, riInterpolator.FARTHEST);
 
 
     cv::resize(normOrigRi, normImgRi[0], cv::Size(normIntrRi.cols, normIntrRi.rows), cv::INTER_LINEAR);

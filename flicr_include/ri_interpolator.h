@@ -16,19 +16,19 @@ public:
     RIGHT
   };
 
-  int baseVal;
-  int baseIntVal;
+  double baseVal;
+  double baseIntVal;
   int wndX, wndY;
-  int gradient;
+  double gradient;
   IntrDir dir;
 
   void print()
   {
     printf("===== IntrInfo =====\n");
-    printf("\tBase Value: %d\n", baseVal);
+    printf("\tBase Value: %f\n", baseVal);
     printf("\tLocation (y, x): (%d, %d)\n", wndY, wndX);
     printf("\tInterpolation Direction: %s\n", (dir == LEFT) ? "LEFT" : "RIGHT");
-    printf("\tGradient Magnitude: %d\n", gradient);
+    printf("\tGradient Magnitude: %f\n", gradient);
   }
 
   static bool compareBaseValDesc(IntrInfo info1, IntrInfo info2)
@@ -48,7 +48,7 @@ public:
 };
 
 
-
+template<typename MAT_T>
 class RiInterpolator
 {
   public:
@@ -106,18 +106,6 @@ class RiInterpolator
     }
 
 
-    // INTER_LINEAR - a bilinear interpolation (used by default)
-    // INTER_NEAREST - a nearest-neighbor interpolation
-    // INTER_CUBIC - a bicubic interpolation over 4x4 pixel neighborhood
-    // INTER_LANCZOS4 - a Lanczos interpolation over 8x8 pixel neighborhood
-    // INTER_AREA - resampling using pixel area relation. It may be a preferred method for image decimation, as it gives moire’-free results. But when the image is zoomed, it is similar to the INTER_NEAREST method.
-    cv::Mat cvInterpolate(cv::Mat original, int row, int col, int cvInterFormat)
-    {
-      cv::Mat outRi(row, col, CV_8UC1, cv::Scalar(0));
-      cv::resize(original, outRi, cv::Size(col, row), cvInterFormat);
-      return outRi;
-    }
-
     // Get the X index in RI with circular iteration
     int getRiX(int x, int riCol, int offset, bool circular)
     {
@@ -138,23 +126,23 @@ class RiInterpolator
     }
 
     // Get the gradient to the next pixel with the given curX, curY
-    int getNextGradient(int curY, int curX, cv::Mat ri, bool circular, int gradThresh)
+    double getNextGradient(int curY, int curX, cv::Mat ri, bool circular, double gradThresh)
     {
       int riCols = ri.cols;
 
       int nextX, nextnextX;
 
-      char curP = ri.at<char>(curY, curX);
-      char nextP, nextnextP;
+      double curP = ri.at<MAT_T>(curY, curX);
+      double nextP, nextnextP;
 
-      int nextGrad = INVALID_GRADIENT;
+      double nextGrad = INVALID_GRADIENT;
 
       if(curP != 0) // priority -- NZ
       {
         nextX = getRiX(curX, riCols, 1, circular);
         if(nextX != INVALID_INDEX)
         {
-          nextP = ri.at<char>(curY, nextX);
+          nextP = ri.at<MAT_T>(curY, nextX);
           nextGrad = (nextP == 0) ? INVALID_GRADIENT :
             (abs(nextP-curP) > gradThresh) ? INVALID_GRADIENT : nextP - curP;
         }
@@ -170,8 +158,8 @@ class RiInterpolator
 
         if(nextX != INVALID_INDEX && nextnextX != INVALID_INDEX)
         {
-          nextP = ri.at<char>(curY, nextX);
-          nextnextP = ri.at<char>(curY, nextnextX);
+          nextP = ri.at<MAT_T>(curY, nextX);
+          nextnextP = ri.at<MAT_T>(curY, nextnextX);
           nextGrad = (nextP == 0 || nextnextP == 0) ? INVALID_GRADIENT :
             (abs(nextnextP-nextP) > gradThresh) ? INVALID_GRADIENT : nextP - nextnextP;
         }
@@ -184,23 +172,23 @@ class RiInterpolator
     }
 
     // Get the gradient to the previous pixel with the given curX, curY
-    int getPrevGradient(int curY, int curX, cv::Mat ri, bool circular, int gradThresh)
+    double getPrevGradient(int curY, int curX, cv::Mat ri, bool circular, double gradThresh)
     {
       int riCols = ri.cols;
 
       int prevX, prevprevX;
 
-      char curP = ri.at<char>(curY, curX);
-      char prevP, prevprevP;
+      double curP = ri.at<MAT_T>(curY, curX);
+      double prevP = 0, prevprevP = 0;
 
-      int prevGrad = INVALID_GRADIENT;
+      double prevGrad = INVALID_GRADIENT;
 
       if(curP != 0) // priority -- NZ
       {
         prevX = getRiX(curX, riCols, -1, circular);
         if(prevX != INVALID_INDEX)
         {
-          prevP = ri.at<char>(curY, prevX);
+          prevP = ri.at<MAT_T>(curY, prevX);
           prevGrad = (prevP == 0) ? INVALID_GRADIENT :
             (abs(curP - prevP) > gradThresh) ? INVALID_GRADIENT : prevP - curP;
         }
@@ -215,8 +203,8 @@ class RiInterpolator
         prevprevX = getRiX(curX, riCols, -2, circular);
         if(prevX != INVALID_INDEX && prevprevX != INVALID_INDEX)
         {
-          prevP = ri.at<char>(curY, prevX);
-          prevprevP =ri.at<char>(curY, prevprevX);
+          prevP = ri.at<MAT_T>(curY, prevX);
+          prevprevP =ri.at<MAT_T>(curY, prevprevX);
           prevGrad = (prevP == 0 || prevprevP == 0) ? INVALID_GRADIENT :
             (abs(prevP-prevprevP) > gradThresh) ? INVALID_GRADIENT : prevP - prevprevP;
         }
@@ -234,9 +222,9 @@ class RiInterpolator
       int intrWndX = info.wndX + ((info.dir == IntrInfo::RIGHT) ? 1 : 0);
       int insertionX = xWndStart + intrWndX;
       for(int x = xWndEnd-1; x >= insertionX; x--)
-        mat.at<char>(y, x) = mat.at<char>(y, x-1);
+        mat.at<MAT_T>(y, x) = mat.at<MAT_T>(y, x-1);
 
-      mat.at<char>(y, insertionX) = info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2);
+      mat.at<MAT_T>(y, insertionX) = info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2);
     }
 
 
@@ -246,16 +234,17 @@ class RiInterpolator
       int insertionX = xWndStart + intrWndX;
       for(int x = xWndEnd-1; x >= insertionX; x--)
       {
-        mat.at<char>(y, x) = mat.at<char>(y, x-1);
-        matInt.at<char>(y, x) = matInt.at<char>(y, x-1);
+        mat.at<MAT_T>(y, x) = mat.at<MAT_T>(y, x-1);
+        matInt.at<MAT_T>(y, x) = matInt.at<MAT_T>(y, x-1);
       }
 
-      mat.at<char>(y, insertionX)    = info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2);
-      matInt.at<char>(y, insertionX) = info.baseIntVal;
+      mat.at<MAT_T>(y, insertionX)    = (MAT_T)(info.baseVal + ((info.baseVal == 0) ? info.gradient : info.gradient/2));
+      matInt.at<MAT_T>(y, insertionX) = (MAT_T)info.baseIntVal;
     }
 
 
-    void interpolate(cv::Mat &original, cv::Mat &result, int sWndSize, int insertions, bool circular, int gradThresh, InterpolationPriority intrPriority = InterpolationPriority::FARTHEST)
+    void interpolate(cv::Mat &original, cv::Mat &result, int sWndSize, int insertions, bool circular, double gradThresh,
+                     InterpolationPriority intrPriority = InterpolationPriority::FARTHEST)
     {
       if(original.cols % sWndSize != 0)
       {
@@ -266,8 +255,8 @@ class RiInterpolator
       int xIter = original.cols / sWndSize;
       int riCols = original.cols;
       int intrCols = xIter * (sWndSize+insertions);
-      result = cv::Mat(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
 
+      result = cv::Mat(original.rows, intrCols, original.type(), cv::Scalar(0));
       debug_print("xIter: %d, riCols: %d", xIter, riCols);
 
       for(int y = 0; y < original.rows; y++) // column iteration...
@@ -281,10 +270,10 @@ class RiInterpolator
           int xIntrWndStart = xWnd     * (sWndSize+insertions);
           int xIntrWndEnd   = (xWnd+1) * (sWndSize+insertions);
 
-          char curP;
+          double curP;
           int zNextX, zPrevX;
 
-          int nextGrad, prevGrad, leastGrad;
+          double nextGrad, prevGrad, leastGrad;
 
           // Interpolation Infos within a window...
           std::vector<IntrInfo> nzIntrInfos;
@@ -294,8 +283,8 @@ class RiInterpolator
 
           for(int x=xWndStart, xWndIdx=0, intrX=xIntrWndStart; x < xWndEnd; x++, xWndIdx++, intrX++) // iterations in each X window...
           {
-            curP = original.at<char>(y, x);
-            result.at<char>(y, intrX) = curP;
+            curP = original.at<MAT_T>(y, x);
+            result.at<MAT_T>(y, intrX) = curP;
 
             if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
             {
@@ -337,7 +326,7 @@ class RiInterpolator
               {
                 zNextX = getRiX(x, riCols, 1, circular);
                 zPrevX = getRiX(x, riCols, -1, circular);
-                intrInfo.baseVal = (abs(nextGrad) < abs(prevGrad)) ? original.at<char>(y, zNextX) : original.at<char>(y, zPrevX);
+                intrInfo.baseVal = (abs(nextGrad) < abs(prevGrad)) ? original.at<MAT_T>(y, zNextX) : original.at<MAT_T>(y, zPrevX);
                 zIntrInfos.push_back(intrInfo);
               }
               else // nzIntrInfos
@@ -396,7 +385,7 @@ class RiInterpolator
 
 
     void interpolate(cv::Mat &original, cv::Mat &originalInt, cv::Mat &result, cv::Mat &resultInt,
-        int sWndSize, int insertions, bool circular, int gradThresh,
+        int sWndSize, int insertions, bool circular, double gradThresh,
         InterpolationPriority intrPriority = InterpolationPriority::FARTHEST)
     {
       if(original.cols % sWndSize != 0)
@@ -408,8 +397,8 @@ class RiInterpolator
       int xIter = original.cols / sWndSize;
       int riCols = original.cols;
       int intrCols = xIter * (sWndSize+insertions);
-      result    = cv::Mat(original.rows, intrCols, CV_8UC1, cv::Scalar(0));
-      resultInt = cv::Mat(originalInt.rows, intrCols, CV_8UC1, cv::Scalar(0));
+      result    = cv::Mat(original.rows, intrCols, original.type(), cv::Scalar(0));
+      resultInt = cv::Mat(originalInt.rows, intrCols, originalInt.type(), cv::Scalar(0));
 
       debug_print("xIter: %d, riCols: %d", xIter, riCols);
 
@@ -424,10 +413,10 @@ class RiInterpolator
           int xIntrWndStart = xWnd     * (sWndSize+insertions);
           int xIntrWndEnd   = (xWnd+1) * (sWndSize+insertions);
 
-          char curP, curInt;
+          double curP, curInt;
           int zNextX, zPrevX;
 
-          int nextGrad, prevGrad, leastGrad;
+          double nextGrad, prevGrad, leastGrad;
 
           // Interpolation Infos within a window...
           std::vector<IntrInfo> nzIntrInfos;
@@ -437,11 +426,11 @@ class RiInterpolator
 
           for(int x=xWndStart, xWndIdx=0, intrX=xIntrWndStart; x < xWndEnd; x++, xWndIdx++, intrX++) // iterations in each X window...
           {
-            curP = original.at<char>(y, x);
-            result.at<char>(y, intrX) = curP;
+            curP = original.at<MAT_T>(y, x);
+            result.at<MAT_T>(y, intrX) = (MAT_T)curP;
 
-            curInt = originalInt.at<char>(y, x);
-            resultInt.at<char>(y, intrX) = curInt;
+            curInt = originalInt.at<MAT_T>(y, x);
+            resultInt.at<MAT_T>(y, intrX) = (MAT_T)curInt;
 
             if(x == xWndStart || curP == 0) // NZ && first in window / Z -- next/prev (nextnext/prevprev)
             {
@@ -484,8 +473,8 @@ class RiInterpolator
               {
                 zNextX = getRiX(x, riCols, 1, circular);
                 zPrevX = getRiX(x, riCols, -1, circular);
-                intrInfo.baseVal    = (abs(nextGrad) < abs(prevGrad)) ? original.at<char>(y, zNextX) : original.at<char>(y, zPrevX);
-                intrInfo.baseIntVal = (abs(nextGrad) < abs(prevGrad)) ? originalInt.at<char>(y, zNextX) : originalInt.at<char>(y, zPrevX);
+                intrInfo.baseVal    = (abs(nextGrad) < abs(prevGrad)) ? original.at<MAT_T>(y, zNextX) : original.at<MAT_T>(y, zPrevX);
+                intrInfo.baseIntVal = (abs(nextGrad) < abs(prevGrad)) ? originalInt.at<MAT_T>(y, zNextX) : originalInt.at<MAT_T>(y, zPrevX);
                 zIntrInfos.push_back(intrInfo);
               }
               else // nzIntrInfos

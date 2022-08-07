@@ -77,10 +77,10 @@ int main(int argc, char **argv)
     riConverter.normalizeRi(origRi, normOrigRi, riMin, riMax);
     riConverter.normalizeRi(intMat, normIntMat, intMin, intMax);
 
-    RiInterpolator riInterpolator;
+    RiInterpolator<uint8_t> riInterpolator;
     double st, et;
     st = getTsNow();
-    riInterpolator.interpolate(normOrigRi, normIntMat, normIntrRi, normIntrIntMat, 4, 3, true, 3, RiInterpolator::FARTHEST);
+    riInterpolator.interpolate(normOrigRi, normIntMat, normIntrRi, normIntrIntMat, 4, 3, true, 3, riInterpolator.FARTHEST);
     et = getTsNow();
     debug_print("interpolate lat: %f", et-st);
 

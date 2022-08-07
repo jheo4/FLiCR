@@ -5,7 +5,7 @@ using namespace flicr;
 
 int main()
 {
-  RiInterpolator riInterpolator;
+  RiInterpolator<uint8_t> riInterpolator;
   riInterpolator.setIntr(64, 4500, 2, 2);
   riInterpolator.printSetting();
 
