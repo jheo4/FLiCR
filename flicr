@@ -1,9 +1,7 @@
 #include <bits/stdc++.h>
-#include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
-
-#include "./flicr_include/third_party/cxxopts.hpp"
+#include <cxxopts.hpp>
 
 #include "./flicr_include/defs.h"
 #include "./flicr_include/types.h"

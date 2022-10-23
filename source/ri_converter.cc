@@ -4,70 +4,70 @@
 using namespace flicr;
 
 RiConverter::RiConverter(double minRange,          double maxRange,
-                         double thetaPrecision,    double piPrecision,
-                         double thetaDegree,       double piDegree,
-                         double thetaDegreeOffset, double piDegreeOffset)
+                         double pitchPrecision,    double yawPrecision,
+                         double pitchDegree,       double yawDegree,
+                         double pitchDegreeOffset, double yawDegreeOffset)
 {
-  setConfig(minRange, maxRange, thetaPrecision, piPrecision, thetaDegree, piDegree, thetaDegreeOffset, piDegreeOffset);
+  setConfig(minRange, maxRange, pitchPrecision, yawPrecision, pitchDegree, yawDegree, pitchDegreeOffset, yawDegreeOffset);
 }
 
 
 void RiConverter::setConfig(double minRange,          double maxRange,
-                            double thetaPrecision,    double piPrecision,
-                            double thetaDegree,       double piDegree,
-                            double thetaDegreeOffset, double piDegreeOffset)
+                            double pitchPrecision,    double yawPrecision,
+                            double pitchDegree,       double yawDegree,
+                            double pitchDegreeOffset, double yawDegreeOffset)
 {
   // Min-Max range of a sensor
   this->minRange             = minRange;
   this->maxRange             = maxRange;
 
-  // Theta (y, row) precision, Pi (x, col) precision
-  this->thetaPrecision       = thetaPrecision;
-  this->piPrecision          = piPrecision;
+  // Pitch (y, row) precision, Yaw (x, col) precision
+  this->pitchPrecision       = pitchPrecision;
+  this->yawPrecision          = yawPrecision;
 
-  // Theta degree: Y sensing degree
-  // Pi degree   : X sensing degree
-  this->thetaDegree          = thetaDegree;
-  this->piDegree             = piDegree;
+  // Pitch degree: Y sensing degree
+  // Yaw degree   : X sensing degree
+  this->pitchDegree          = pitchDegree;
+  this->yawDegree             = yawDegree;
 
-  // Theta (y) degree offset
-  // Pi (x) degree offset
-  this->thetaDegreeOffset    = thetaDegreeOffset;
-  this->piDegreeOffset       = piDegreeOffset;
+  // Pitch (y) degree offset
+  // Yaw (x) degree offset
+  this->pitchDegreeOffset    = pitchDegreeOffset;
+  this->yawDegreeOffset       = yawDegreeOffset;
 
-  this->riRow = thetaDegree / thetaPrecision;
-  this->riCol = piDegree    / piPrecision;
+  this->riRow = pitchDegree / pitchPrecision;
+  this->riCol = yawDegree    / yawPrecision;
 }
 
 
 void RiConverter::setResolution(int row, int col)
 {
-  this->thetaPrecision = (double)this->thetaDegree/row;
-  this->piPrecision    = (double)this->piDegree/col;
+  this->pitchPrecision = (double)this->pitchDegree/row;
+  this->yawPrecision    = (double)this->yawDegree/col;
   this->riRow = row;
   this->riCol = col;
 }
 
 
-void RiConverter::XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRow, int &piCol)
+void RiConverter::XYZ2RTP(float &x, float &y, float &z, float &rho, int &pitchRow, int &yawCol)
 {
   rho    = std::sqrt(x*x + y*y + z*z);
-  thetaRow = (int)((RAD2DEGREE(std::acos(z/rho))+thetaDegreeOffset) / thetaPrecision);
-  piCol    = (int)((RAD2DEGREE(std::atan2(y, x))+piDegreeOffset)    / piPrecision);
+  pitchRow = (int)((RAD2DEGREE(std::acos(z/rho))+pitchDegreeOffset) / pitchPrecision);
+  yawCol    = (int)((RAD2DEGREE(std::atan2(y, x))+yawDegreeOffset)    / yawPrecision);
 }
 
 
-void RiConverter::RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float &y, float &z)
+void RiConverter::RTP2XYZ(float &rho, int &pitchRow, int &yawCol, float &x, float &y, float &z)
 {
-  float dTheta = (thetaRow * thetaPrecision) - thetaDegreeOffset;
-  float dPi    = (piCol    * piPrecision)    - piDegreeOffset;
+  float dPitch = (pitchRow * pitchPrecision) - pitchDegreeOffset;
+  float dYaw    = (yawCol    * yawPrecision)    - yawDegreeOffset;
 
-  float rTheta = DEGREE2RAD(dTheta);
-  float rPi    = DEGREE2RAD(dPi);
+  float rPitch = DEGREE2RAD(dPitch);
+  float rYaw   = DEGREE2RAD(dYaw);
 
-  x = rho * std::sin(rTheta) * std::cos(rPi);
-  y = rho * std::sin(rTheta) * std::sin(rPi);
-  z = rho * std::cos(rTheta);
+  x = rho * std::sin(rPitch) * std::cos(rYaw);
+  y = rho * std::sin(rPitch) * std::sin(rYaw);
+  z = rho * std::cos(rPitch);
 }
 
 
@@ -84,12 +84,12 @@ void RiConverter::convertRawPc2Ri(types::RawPc inPc, cv::Mat &outRi, bool parall
     float z = inPc.buf[pointIdx+2];
 
     float rho;
-    int thetaRow, piCol;
+    int pitchRow, yawCol;
 
-    XYZ2RTP(x, y, z, rho, thetaRow, piCol);
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
 
-    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<float>(rowIdx, colIdx) == 0)
       outRi.at<float>(rowIdx, colIdx) = rho;
@@ -111,12 +111,12 @@ void RiConverter::convertPc2Ri(types::PclPcXyz inPc, cv::Mat &outRi, bool parall
     float z = inPc->points[i].z;
 
     float rho;
-    int thetaRow, piCol;
+    int pitchRow, yawCol;
 
-    XYZ2RTP(x, y, z, rho, thetaRow, piCol);
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
 
-    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<float>(rowIdx, colIdx) == 0)
       outRi.at<float>(rowIdx, colIdx) = rho;
@@ -138,12 +138,12 @@ void RiConverter::convertPc2RiWithI(types::PclPcXyzi inPc, cv::Mat &outRi, bool 
     float z = inPc->points[i].z;
 
     float rho;
-    int thetaRow, piCol;
+    int pitchRow, yawCol;
 
-    XYZ2RTP(x, y, z, rho, thetaRow, piCol);
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
 
-    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] == 0)
     {
@@ -172,12 +172,12 @@ void RiConverter::convertPc2RiWithIm(types::PclPcXyzi inPc, cv::Mat &outRi, cv::
     float z = inPc->points[i].z;
 
     float rho;
-    int thetaRow, piCol;
+    int pitchRow, yawCol;
 
-    XYZ2RTP(x, y, z, rho, thetaRow, piCol);
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
 
-    int rowIdx = std::min(outRi.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(outRi.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<float>(rowIdx, colIdx) == 0)
     {
@@ -207,12 +207,12 @@ void RiConverter::convertPc2RiWithXyz(types::PclPcXyz inPc, cv::Mat &outRiWithXy
     //float r = p.r; // need to be encoded?
 
     float rho;
-    int thetaRow, piCol;
+    int pitchRow, yawCol;
 
-    XYZ2RTP(x, y, z, rho, thetaRow, piCol);
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
 
-    int rowIdx = std::min(outRiWithXyz.rows-1, std::max(0, thetaRow));
-    int colIdx = std::min(outRiWithXyz.cols-1, std::max(0, piCol));
+    int rowIdx = std::min(outRiWithXyz.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRiWithXyz.cols-1, std::max(0, yawCol));
 
     outRiWithXyz.at<cv::Vec4f>(rowIdx, colIdx) = cv::Vec4f(rho, x, y, z);
   }
@@ -467,7 +467,7 @@ float RiConverter::calcRiQuantError(types::PclPcXyz pc, cv::Mat *ri)
 }
 
 
-void RiConverter::calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
+void RiConverter::calcRiYawxNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
 {
   cv::Mat dnRi, diff;
   cv::Mat mean, stddev;
@@ -477,7 +477,7 @@ void RiConverter::calcRiPixNormError(cv::Mat *ri, double riMax, cv::Mat *nRi)
   cv::absdiff(*ri, dnRi, diff);
   cv::meanStdDev(diff, mean, stddev);
 
-  printf("========= calcRiPixNormError =======\n");
+  printf("========= calcRiYawxNormError =======\n");
   printf("\tDistance absdiff: mean (%fm), stddev (%fm)\n", mean.at<double>(0), stddev.at<double>(0));
   printf("====================================\n");
 }

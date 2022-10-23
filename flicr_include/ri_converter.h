@@ -14,30 +14,30 @@ class RiConverter
 {
   public:
     int riRow, riCol;
-    // Theta (y, row), Pi (x, col)
-    double thetaPrecision,    piPrecision;
-    double thetaDegree,       piDegree;
-    double thetaDegreeOffset, piDegreeOffset;
-    double thetaOffset,       piOffset;
+    // Pitch (y, row), Yaw (x, col)
+    double pitchPrecision,    yawPrecision;
+    double pitchDegree,       yawDegree;
+    double pitchDegreeOffset, yawDegreeOffset;
+    double pitchOffset,       yawOffset;
     double minRange, maxRange;
 
     RiConverter(double minRange          = HDL64_MIN_RANGE,
                 double maxRange          = HDL64_MAX_RANGE,
-                double thetaPrecision    = HDL64_THETA_PRECISION,
-                double piPrecision       = HDL64_PI_PRECISION,
-                double thetaDegree       = HDL64_VERTICAL_DEGREE,
-                double piDegree          = HDL64_HORIZONTAL_DEGREE,
-                double thetaDegreeOffset = HDL64_VERTICAL_DEGREE_OFFSET,
-                double piDegreeOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET);
+                double pitchPrecision    = HDL64_THETA_PRECISION,
+                double yawPrecision       = HDL64_PI_PRECISION,
+                double pitchDegree       = HDL64_VERTICAL_DEGREE,
+                double yawDegree          = HDL64_HORIZONTAL_DEGREE,
+                double pitchDegreeOffset = HDL64_VERTICAL_DEGREE_OFFSET,
+                double yawDegreeOffset    = HDL64_HORIZONTAL_DEGREE_OFFSET);
 
     void setConfig(double minRange,          double maxRange,
-                   double thetaPrecision,    double piPrecision,
-                   double thetaDegree,       double piDegree,
-                   double thetaDegreeOffset, double piDegreeOffset);
+                   double pitchPrecision,    double yawPrecision,
+                   double pitchDegree,       double yawDegree,
+                   double pitchDegreeOffset, double yawDegreeOffset);
     void setResolution(int row, int col);
 
-    void XYZ2RTP(float &x, float &y, float &z, float &rho, int &thetaRow, int &piCol);
-    void RTP2XYZ(float &rho, int &thetaRow, int &piCol, float &x, float &y, float &z);
+    void XYZ2RTP(float &x, float &y, float &z, float &rho, int &pitchRow, int &yawCol);
+    void RTP2XYZ(float &rho, int &pitchRow, int &yawCol, float &x, float &y, float &z);
 
     void  convertRawPc2Ri     (types::RawPc     inPc, cv::Mat &outRi, bool parallel);
     void  convertPc2Ri        (types::PclPcXyz  inPc, cv::Mat &outRi, bool parallel);

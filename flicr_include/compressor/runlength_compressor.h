@@ -45,6 +45,22 @@ class RunLengthCompressor
       }
       return decoded;
     }
+
+    std::vector<char> decode(std::vector<char> encoded)
+    {
+      std::vector<char> decoded;
+
+      for(int i = 0; i < (int)encoded.size(); i+=2)
+      {
+        char elem    = encoded[i];
+        char elemSeq = encoded[i+1];
+        for(int j = 0; j < elemSeq; j++)
+        {
+          decoded.push_back(elem);
+        }
+      }
+      return decoded;
+    }
 };
 }
 
