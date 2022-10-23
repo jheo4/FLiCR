@@ -4,16 +4,36 @@ using namespace std;
 using namespace flicr;
 
 // Decode encoded point cloud with LZ77
-// ./rawpc_dict_decode orig.bin encoded.bin
 int main(int argc, char* argv[]) {
+  cxxopts::Options options("lz77_enc", "LZ77 Encoder");
+  options.add_options()
+    ("i, input", "Encoded input file path", cxxopts::value<std::string>())
+    ("o, output", "Decoded output file path", cxxopts::value<std::string>())
+    ("d, debug", "debug print option", cxxopts::value<bool>()->default_value("false"))
+    ("h, help", "Print usage")
+    ;
+
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
+  {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
+
+  std::string input  = parsedArgs["input"].as<std::string>();
+  std::string output = parsedArgs["output"].as<std::string>();
+  bool debug = parsedArgs["debug"].as<bool>();
+
+  if(debug)
+  {
+    cout << "ARGS" << endl;
+    cout << "\tinput file: " << input << endl;
+    cout << "\toutput file: " << output << endl;
+  }
+
+  std::shared_ptr<spdlog::logger> latencyLogger = spdlog::basic_logger_st("latency_logger", "./lz77_dec.log");
+
   double st, et;
-
-  if(argc != 3) exit(1);
-  std::string input  = argv[1];
-  std::string output = argv[2];
-
-  cout << input << endl;
-  cout << output << endl;
 
   FILE* ifp = fopen(input.c_str(), "rb");
   if(ifp == NULL)
@@ -45,7 +65,9 @@ int main(int argc, char* argv[]) {
 
   // save file to bin
   fwrite(decoded.data(), sizeof(char), decoded.size(), ofp);
-  debug_print("encodedSize: %d, exe: %f", encodedSize, et-st);
+
+  latencyLogger->info("{}\t{}\t{}", et-st, encodedSize, decoded.size());
+  if(debug) debug_print("lat: %f, encodedSize %d, decodedSize %ld", et-st, encodedSize, decoded.size());
 
   fclose(ifp);
   fclose(ofp);

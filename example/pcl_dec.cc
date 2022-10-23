@@ -10,17 +10,36 @@ using namespace std;
 using namespace flicr;
 
 // Decode encoded point cloud with PCL's octree compressor
-// ./pcl_dec encoded.bin decoded.bin
 int main(int argc, char* argv[]) {
+  cxxopts::Options options("pcl_dec", "PCL Octree-based Decoder");
+  options.add_options()
+    ("i, input", "Encoded input file path", cxxopts::value<std::string>())
+    ("o, output", "Decoded output file path", cxxopts::value<std::string>())
+    ("d, debug", "debug print option", cxxopts::value<bool>()->default_value("false"))
+    ("h, help", "Print usage")
+    ;
+
+  auto parsedArgs = options.parse(argc, argv);
+  if(parsedArgs.count("help"))
+  {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
+
+  std::string input  = parsedArgs["input"].as<std::string>();
+  std::string output = parsedArgs["output"].as<std::string>();
+  bool debug = parsedArgs["debug"].as<bool>();
+
+  if(debug)
+  {
+    cout << "ARGS" << endl;
+    cout << "\tinput file: " << input << endl;
+    cout << "\toutput file: " << output << endl;
+  }
+
+  std::shared_ptr<spdlog::logger> latencyLogger = spdlog::basic_logger_st("latency_logger", "./pcl_dec.log");
 
   double st, et;
-
-  if(argc != 3) exit(1);
-  std::string input  = argv[1];
-  std::string output = argv[2];
-
-  cout << input << endl;
-  cout << output << endl;
 
   std::ifstream inf;
   std::ofstream outf;
@@ -39,9 +58,16 @@ int main(int argc, char* argv[]) {
   st = getTsNow();
   xyzDecoder->decodePointCloud(encoded, decoded);
   et = getTsNow();
-  debug_print("exe: %f", et-st);
+
+  encoded.seekg(0, ios::end);
+  int encodedSize = encoded.tellg();
+  encoded.seekg(0);
 
   pcWriter.writeBin(output, decoded);
+
+  latencyLogger->info("{}\t{}\t{}", et-st, encodedSize, decoded->size()*3*4);
+  if(debug) debug_print("decomp %f, encodedSize %d, decodedSize %ld", et-st, encodedSize, decoded->size()*3*4);
+
   return 0;
 }
 
