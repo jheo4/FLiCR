@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
     cout << "\tsensor's pitch FoV: " << pitch_fov << endl;
     cout << "\tsensor's yaw offset: "   << yaw_offset << endl;
     cout << "\tsensor's pitch offset: " << pitch_offset << endl;
+    cout << "\tsensor's min/max range: " << min << ", " << max << endl;
     cout << "\tRI, intMap resolution: " << x << ", " << y << endl;
     cout << "\tNormalize: " << norm << endl;
   }
