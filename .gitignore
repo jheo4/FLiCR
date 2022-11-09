@@ -171,3 +171,7 @@ python/data
 *.gif
 
 bin/
+
+*.bin
+*.yaml
+!./sample_data/*.bin
