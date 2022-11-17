@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     inputIntMap = cv::imread(inIntMap, CV_8UC1);
 
     cv::normalize(inputRi, ri, min, max, cv::NORM_MINMAX, CV_32FC1);
-    cv::normalize(inputIntMap, intMap, 0, 255, cv::NORM_MINMAX, CV_32FC1);
+    cv::normalize(inputIntMap, intMap, 0, 1, cv::NORM_MINMAX, CV_32FC1);
   }
   else
   {
