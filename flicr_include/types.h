@@ -8,11 +8,13 @@ namespace flicr
 {
 namespace types
 {
-  using PclXyz    = pcl::PointXYZ;
-  using PclXyzi   = pcl::PointXYZI;
-  using PclPcXyz  = pcl::PointCloud<PclXyz>::Ptr;
-  using PclPcXyzi = pcl::PointCloud<PclXyzi>::Ptr;
-  using PclMesh   = pcl::PolygonMeshPtr;
+  using PclXyz      = pcl::PointXYZ;
+  using PclXyzRgb   = pcl::PointXYZRGB;
+  using PclXyzi     = pcl::PointXYZI;
+  using PclPcXyz    = pcl::PointCloud<PclXyz>::Ptr;
+  using PclPcXyzRgb = pcl::PointCloud<PclXyzRgb>::Ptr;
+  using PclPcXyzi   = pcl::PointCloud<PclXyzi>::Ptr;
+  using PclMesh     = pcl::PolygonMeshPtr;
 
 
   typedef struct RawPc

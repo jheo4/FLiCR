@@ -59,6 +59,17 @@ void Visualizer::setViewer(types::PclMesh mesh)
 }
 
 
+void Visualizer::setColorizedViewer(types::PclPcXyzRgb pc)
+{
+  pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(pc);
+  viewer->addPointCloud<pcl::PointXYZRGB>(pc, rgb, "colorized point cloud");
+  viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1);
+  viewer->addCoordinateSystem(1.0);
+  viewer->initCameraParameters();
+  viewer->setCameraPosition(0, 60, 20,  0, 0, 0,  0, 0, 1);
+}
+
+
 void Visualizer::setViewerBEV(int height)
 {
   viewer->setCameraPosition(0, 0, height,  0, 0, 0,  0, 1, 0);

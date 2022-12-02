@@ -23,6 +23,9 @@ class Visualizer
     void setViewer(types::PclPcXyz pc);
     void setViewer(types::PclPcXyzi pc);
     void setViewer(types::PclMesh mesh);
+
+    void setColorizedViewer(types::PclPcXyzRgb pc);
+
     void setViewerBEV(int height=100);
     void setViewerXyz(int x, int y, int z);
     void show(int tickPeriod);
