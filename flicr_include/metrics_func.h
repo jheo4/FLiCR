@@ -49,14 +49,14 @@ class Metrics
                                    );
 
     //debug_print("# of outliers: %d", outliers);
-    return sqrdSum / (pc2->size() - outliers);
+    return (float)sqrdSum / (float)(pc2->size() - outliers);
   }
 
 
   static float calcPsnrBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2, float pcMax)
   {
     float MSE  = getMseBtwPcs(pc1, pc2, pcMax);
-    float PSNR = 10*log10(pow(pcMax, 2)/MSE);
+    float PSNR = 10*log10(pow(pcMax, 2.0)/MSE);
 
     return PSNR;
   }
