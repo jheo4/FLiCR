@@ -8,8 +8,6 @@ int main(int argc, char **argv) {
   options.add_options()
     ("i, input", "Raw input file path", cxxopts::value<std::string>())
     ("o, output", "Encoded output file path", cxxopts::value<std::string>())
-    ("yaw", "yaw precision", cxxopts::value<float>())
-    ("pitch", "pitch precision", cxxopts::value<float>())
     ("yaw_fov",   "yaw fov", cxxopts::value<float>())
     ("pitch_fov", "pitch fov", cxxopts::value<float>())
     ("yaw_offset",   "yaw offset", cxxopts::value<float>())
@@ -33,8 +31,6 @@ int main(int argc, char **argv) {
 
   std::string input  = parsedArgs["input"].as<std::string>();
   std::string output = parsedArgs["output"].as<std::string>();
-  float yaw   = parsedArgs["yaw"].as<float>();
-  float pitch = parsedArgs["pitch"].as<float>();
   float yaw_fov   = parsedArgs["yaw_fov"].as<float>();
   float pitch_fov = parsedArgs["pitch_fov"].as<float>();
   float yaw_offset   = parsedArgs["yaw_offset"].as<float>();
@@ -51,8 +47,6 @@ int main(int argc, char **argv) {
     cout << "ARGS" << endl;
     cout << "\tinput file: " << input << endl;
     cout << "\toutput file: " << output << endl;
-    cout << "\tsensor's yaw precision: "   << yaw << endl;
-    cout << "\tsensor's pitch precision: " << pitch << endl;
     cout << "\tsensor's yaw FoV: "   << yaw_fov << endl;
     cout << "\tsensor's pitch FoV: " << pitch_fov << endl;
     cout << "\tsensor's yaw offset: "   << yaw_offset << endl;
@@ -80,6 +74,9 @@ int main(int argc, char **argv) {
     if(debug) debug_print("output file creation failed..");
     exit(1);
   }
+
+  float yaw = yaw_fov / x;
+  float pitch = pitch_fov / y;
 
   RiConverter riConverter;
   riConverter.setConfig(min, max, pitch, yaw, pitch_fov, yaw_fov, pitch_offset, yaw_offset);
@@ -114,6 +111,7 @@ int main(int argc, char **argv) {
     st = getTsNow();
     riConverter.convertPc2Ri(xyz, ri, true);
     riConverter.normalizeRi(ri, nRi, riMin, riMax);
+    printf("riMin/Max: %f, %f \n", riMin, riMax);
     et = getTsNow();
     conv = et-st;
     st = getTsNow();
