@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
     ("i, input", "Raw input file path", cxxopts::value<std::string>())
     ("s, millisecond", "Time to display in millisecond", cxxopts::value<int>())
     ("c, colorize", "Colorize the point cloud", cxxopts::value<bool>()->default_value("false"))
+    ("r, xyz", "Is the input XYZ?", cxxopts::value<bool>()->default_value("false"))
     ("d, debug", "debug print option", cxxopts::value<bool>()->default_value("false"))
     ("h, help", "Print usage")
     ;
@@ -24,6 +25,7 @@ int main(int argc, char **argv) {
   std::string input  = parsedArgs["input"].as<std::string>();
   int ms             = parsedArgs["millisecond"].as<int>();
   bool colorized     = parsedArgs["colorize"].as<bool>();
+  bool isXyz         = parsedArgs["xyz"].as<bool>();
   bool debug = parsedArgs["debug"].as<bool>();
 
   if(debug)
@@ -37,7 +39,11 @@ int main(int argc, char **argv) {
   PcReader pcReader;
   types::PclPcXyz xyz = NULL;
 
-  xyz = pcReader.readXyzFromXyziBin(input);
+  if(isXyz == true)
+    xyz = pcReader.readXyzBin(input);
+  else
+    xyz = pcReader.readXyzFromXyziBin(input);
+
   if(xyz == NULL)
   {
     if(debug) debug_print("reading input file (%s) failed..", input.c_str());

@@ -7,7 +7,9 @@ int main(int argc, char **argv) {
   cxxopts::Options options("compressor", "FLiCR Compressor (XYZI->XYZ)");
   options.add_options()
     ("r, ref_pc", "Reference input file path", cxxopts::value<std::string>())
+    ("r_xyz", "Is reference PC only XYZ?", cxxopts::value<bool>()->default_value("false"))
     ("c, comp_pc", "Comparing input file path", cxxopts::value<std::string>())
+    ("c_xyz", "Is comparing PC only XYZ?", cxxopts::value<bool>()->default_value("false"))
     ("m, max", "Max sensing distance", cxxopts::value<float>())
     ("d, debug", "debug print option", cxxopts::value<bool>()->default_value("false"))
     ("h, help", "Print usage")
@@ -24,6 +26,8 @@ int main(int argc, char **argv) {
   std::string compPcFile  = parsedArgs["comp_pc"].as<std::string>();
   float max = parsedArgs["max"].as<float>();
   bool debug = parsedArgs["debug"].as<bool>();
+  bool rXyz = parsedArgs["r_xyz"].as<bool>();
+  bool cXyz = parsedArgs["c_xyz"].as<bool>();
 
   if(debug)
   {
@@ -36,8 +40,16 @@ int main(int argc, char **argv) {
   types::PclPcXyz refPc = NULL;
   types::PclPcXyz compPc = NULL;
 
-  refPc = pcReader.readXyzFromXyziBin(refPcFile);
-  compPc = pcReader.readXyzFromXyziBin(compPcFile);
+  if(rXyz == true)
+    refPc = pcReader.readXyzBin(refPcFile);
+  else
+    refPc = pcReader.readXyzFromXyziBin(refPcFile);
+
+  if(cXyz == true)
+    compPc = pcReader.readXyzBin(compPcFile);
+  else
+    compPc = pcReader.readXyzFromXyziBin(compPcFile);
+
   if(refPc == NULL || compPc == NULL)
   {
     if(debug) debug_print("reading input file (%s or %s) failed..", refPcFile.c_str(), compPcFile.c_str());
@@ -47,9 +59,6 @@ int main(int argc, char **argv) {
   float cd = flicr::Metrics::calcCdBtwPcs(refPc, compPc);
   float psnr = flicr::Metrics::calcPsnrBtwPcs(refPc, compPc, max);
 
-  cout << "Metric Results" << endl;
-  cout << "\t PSNR " << psnr << ", CD " << cd << endl;
-  cout << "\t refPointSize " << refPc->size() << ", compPointSize " << compPc->size() << ", diffAbs " << abs(int(refPc->size() - compPc->size())) << endl;
-
+  printf("PSNR\t%f\tCD\t%f\n", psnr, cd);
   return 0;
 }
