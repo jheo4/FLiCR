@@ -33,7 +33,7 @@ namespace types
       PclXyz p;
       p.x = pcXyzi->points[i].x;
       p.y = pcXyzi->points[i].y;
-      p.z = pcXyzi->points[i].y;
+      p.z = pcXyzi->points[i].z;
 
       pcXyz->push_back(p);
     }
