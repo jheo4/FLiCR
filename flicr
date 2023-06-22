@@ -19,3 +19,5 @@
 #include "./flicr_include/compressor/boostzip.h"
 #include "./flicr_include/compressor/runlength_compressor.h"
 
+
+#include "./flicr_include/tiler.h"

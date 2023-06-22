@@ -452,7 +452,6 @@ void RiConverter::saveRiToFile(cv::Mat ri, std::string fileName, FileFormat form
   }
 }
 
-
 /*
 float RiConverter::calcRiQuantError(types::PclPcXyz pc, cv::Mat *ri)
 {

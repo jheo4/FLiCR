@@ -175,3 +175,4 @@ bin/
 *.bin
 *.yaml
 !./sample_data/*.bin
+.vscode
