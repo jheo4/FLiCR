@@ -141,13 +141,59 @@ int main(int argc, char **argv) {
   {
     prob.push_back(make_pair(c.first, (float)c.second / total));
   }
-
   count.clear();
 
-  LloydQuantizer lloyd;
 
+  LloydQuantizer lloyd;
   lloyd.initialize(min, max, bit);
   lloyd.train(points, prob, iteration);
+
+  float avgMSE = 0, avgPSNR = 0;
+  // Testing...
+  for (int i = 0; i < testing_data_num; i++)
+  {
+    std::stringstream ss;
+    ss << std::setw(6) << std::setfill('0') << i;
+    std::string file_name = ss.str();
+
+    std::string input = testing_path + "/" + file_name + ".bin";
+    xyzi = pcReader.readXyziBin(input);
+    if (xyzi == NULL)
+    {
+      if (debug)
+        debug_print("reading input file (%s) failed..", input.c_str());
+      exit(1);
+    }
+    cv::Mat ri, intMap;
+    riConverter.convertPc2RiWithIm(xyzi, ri, intMap, true);
+
+    vector<float> testPoints;
+    for (int i = 0; i < ri.rows; i++)
+    {
+      for (int j = 0; j < ri.cols; j++)
+      {
+        float val = ri.at<float>(i, j);
+        if (val < min || val > max)
+          continue;
+
+        testPoints.push_back(val);
+      }
+    }
+    ri.release();
+    intMap.release();
+
+    float mse, psnr;
+    lloyd.test(testPoints, mse, psnr);
+    avgMSE += mse;
+    avgPSNR += psnr;
+
+    testPoints.clear();
+  }
+
+  avgMSE /= testing_data_num;
+  avgPSNR /= testing_data_num;
+  cout << "[TEST] avgMSE: " << avgMSE << ", avgPSNR: " << avgPSNR << endl;
+
 
   return 0;
 }

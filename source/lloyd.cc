@@ -110,7 +110,7 @@ void LloydQuantizer::train(vector<float> &values, vector<pair<float, float>> &pr
     cout << "Done training .. :)" << endl;
 }
 
-vector<float> LloydQuantizer::test(vector<float> &values)
+vector<float> LloydQuantizer::quantize(vector<float> &values)
 {
     vector<float> quantizedValues;
     for (int i = 0; i < values.size(); i++)
@@ -122,4 +122,10 @@ vector<float> LloydQuantizer::test(vector<float> &values)
     cout << "\tMSE: " << MSE << ", PSNR: " << PSNR << endl;
 
     return quantizedValues;
+}
+
+void LloydQuantizer::test(vector<float> &values, float &MSE, float &PSNR)
+{
+    MSE = calculateMSE(values);
+    PSNR = 10 * log10(pow(max, 2) / MSE);
 }
