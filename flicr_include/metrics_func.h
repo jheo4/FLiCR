@@ -26,6 +26,19 @@ class Metrics
   }
 
 
+  static float calculateMSE(cv::Mat img1, cv::Mat img2)
+  {
+    cv::Mat diff;
+    cv::absdiff(img1, img2, diff);
+    diff = diff.mul(diff);
+
+    cv::Scalar mse = cv::sum(diff);
+    mse /= (float)img1.total();
+
+    return mse[0];
+  }
+
+
   static float getMseBtwPcs(types::PclPcXyz pc1, types::PclPcXyz pc2, float distThresh = std::numeric_limits<float>::max())
   {
     int outliers = 0;

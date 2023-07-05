@@ -5,7 +5,7 @@ using namespace std;
 using namespace flicr;
 
 int main(int argc, char **argv) {
-  cxxopts::Options options("compressor", "FLiCR Compressor (XYZI->XYZ)");
+  cxxopts::Options options("utils", "Histogram");
   options.add_options()
     ("i, input", "Raw input file path", cxxopts::value<std::string>())
     ("yaw_fov",   "yaw fov", cxxopts::value<float>())
