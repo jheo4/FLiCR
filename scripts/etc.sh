@@ -1,0 +1,2 @@
+./ri_point_printer -i ../sample_data/1.bin --yaw_fov 360 --pitch_fov 26.8 --yaw_offset 180 --pitch_offset 88 --min_range 1 --max_range 81 -x 4500 -y 64
+./Lloyd_Quantizer --tr /home/jin/mnt/Data/KITTI/original/4500/training --tr_num 100 --tt /home/jin/mnt/Data/KITTI/original/4500/testing --tt_num 100 --yaw_fov 360 --pitch_fov 26.8 --yaw_offset 180 --pitch_offset 88 --min_range 0.5 --max_range 80.1 -x 4500 -y 64 -b 8 -i 10
