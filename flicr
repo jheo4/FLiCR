@@ -21,3 +21,4 @@
 
 
 #include "./flicr_include/tiler.h"
+#include "./flicr_include/lloyd.h"
