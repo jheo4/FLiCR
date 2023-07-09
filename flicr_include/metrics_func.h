@@ -28,14 +28,25 @@ class Metrics
 
   static float calculateMSE(cv::Mat img1, cv::Mat img2)
   {
-    cv::Mat diff;
-    cv::absdiff(img1, img2, diff);
-    diff = diff.mul(diff);
+    int nonzero = 0;
+    float mse = 0;
 
-    cv::Scalar mse = cv::sum(diff);
-    mse /= (float)img1.total();
+    for(int i = 0; i < img1.rows; i++)
+    {
+      for(int j = 0; j < img1.cols; j++)
+      {
+        if(img1.at<float>(i,j) >= 0.2)
+        {
+          float diff = img1.at<float>(i,j) - img2.at<float>(i,j);
+          mse += pow(diff, 2);
+          nonzero++;
+        }
+      }
+    }
 
-    return mse[0];
+    mse /= nonzero;
+
+    return mse;
   }
 
 

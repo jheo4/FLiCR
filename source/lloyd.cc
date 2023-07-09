@@ -31,29 +31,35 @@ void LloydQuantizer::adjustThresholds()
     }
 }
 
-void LloydQuantizer::adjustRepresentationValues(vector<pair<float, float>> &prob)
+void LloydQuantizer::adjustRepresentationValues(vector<pair<float, int>> &count)
 {
+  int countIdx = 0;
+  for (int i = 0; i < level; i++)
+  {
     float floor, ceiling;
-    float numOfPoints, density;
-    for (int i = 0; i < level; i++)
+    float accValue = 0, numPoints = 0;
+
+    floor = T[i];
+    ceiling = T[i+1];
+
+    cout << "Level " << i << ": floor " << floor << ", ceiling " << ceiling << endl;
+
+    for (float j = floor; j < ceiling; j+=0.005)
     {
-        ceiling = ceilf(T[i]);
-
-        if(i == level-1) floor = ceilf(T[i+1]);
-        else floor = floorf(T[i+1]);
-
-        numOfPoints = 0;
-        density = 0;
-
-        for(int j = floor; j <= ceiling; j++)
-        {
-            numOfPoints += j * prob[j].second;
-            density += prob[j].second;
-        }
-
-        if(density != 0)
-            R[i] = numOfPoints / density;
+      if(count[countIdx].first <= floor)
+      {
+        accValue += j * count[countIdx].second;
+        numPoints += count[countIdx].second;
+        countIdx++;
+      }
     }
+
+    if (numPoints != 0)
+    {
+      R[i] = accValue / numPoints;
+      cout << "\t Representation value: " << R[i] << endl;
+    }
+  }
 }
 
 float LloydQuantizer::calculateMSE(vector<float> &values)
@@ -61,7 +67,7 @@ float LloydQuantizer::calculateMSE(vector<float> &values)
     float sum = 0;
     for (int i = 0; i < values.size(); i++)
     {
-        sum += pow(values[i] - getQuantizedValue(values[i]), 2);
+        sum += pow((values[i] - getQuantizedValue(values[i])), 2);
     }
     return sum / values.size();
 }
@@ -78,7 +84,7 @@ float LloydQuantizer::getQuantizedValue(float value)
     return R[i];
 }
 
-void LloydQuantizer::train(vector<float> &values, vector<pair<float, float>> &prob, int iterations)
+void LloydQuantizer::train(vector<float> &values, vector<pair<float, int>> &count, int iterations)
 {
     cout << "Started Training......" << endl;
     float prevMSE, prevPSNR, curMSE, curPSNR;
@@ -86,7 +92,7 @@ void LloydQuantizer::train(vector<float> &values, vector<pair<float, float>> &pr
     int iterationNo = 1;
 
     cout << "Iteration ( " << iterationNo++ << " ) : " << endl;
-    adjustRepresentationValues(prob);
+    adjustRepresentationValues(count);
     curMSE = calculateMSE(values);
     curPSNR = 10 * log10(pow(max, 2) / curMSE);
     cout << "\tMSE: " << curMSE << ", PSNR: " << curPSNR << endl;
@@ -97,7 +103,7 @@ void LloydQuantizer::train(vector<float> &values, vector<pair<float, float>> &pr
         cout << "Iteration ( " << iterationNo++ << " ) : " << endl;
 
         adjustThresholds();
-        adjustRepresentationValues(prob);
+        adjustRepresentationValues(count);
         prevMSE = curMSE;
         prevPSNR = curPSNR;
         curMSE = calculateMSE(values);

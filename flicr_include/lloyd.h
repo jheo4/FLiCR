@@ -14,8 +14,8 @@ public:
 
     void initialize(float min, float max, int bits);
     void adjustThresholds();
-    void adjustRepresentationValues(vector<pair<float, float>> &prob);
-    void train(vector<float> &values, vector<pair<float, float>> &prob, int iterations);
+    void adjustRepresentationValues(vector<pair<float, int>> &count);
+    void train(vector<float> &values, vector<pair<float, int>> &count, int iterations);
     vector<float> quantize(vector<float> &values);
     void test(vector<float> &values, float &MSE, float &PSNR);
 

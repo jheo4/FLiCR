@@ -74,15 +74,15 @@ int main(int argc, char **argv) {
   float pitch = pitch_fov / y;
   float yaw   = yaw_fov / x;
   RiConverter riConverter;
-  riConverter.setConfig(min, max, pitch, yaw, pitch_fov, yaw_fov, pitch_offset, yaw_offset);
+  riConverter.setConfig(0, 80, pitch, yaw, pitch_fov, yaw_fov, pitch_offset, yaw_offset);
 
   for (int i = 0; i < training_data_num; i++)
   {
     std::stringstream ss;
     ss << std::setw(6) << std::setfill('0') << i;
     std::string file_name = ss.str();
-
     std::string input = training_path + "/" + file_name + ".bin";
+
     xyzi = pcReader.readXyziBin(input);
     if (xyzi == NULL)
     {
@@ -90,6 +90,7 @@ int main(int argc, char **argv) {
         debug_print("reading input file (%s) failed..", input.c_str());
       exit(1);
     }
+
     cv::Mat ri, intMap;
     riConverter.convertPc2RiWithIm(xyzi, ri, intMap, true);
     for (int i = 0; i < ri.rows; i++)
@@ -108,7 +109,8 @@ int main(int argc, char **argv) {
     intMap.release();
   }
 
-  vector<pair<float, float>> prob;
+  // Training...
+  sort(points.begin(), points.end()); // sort points...
   vector<pair<float, int>> count;
 
   for(float point : points)
@@ -116,7 +118,7 @@ int main(int argc, char **argv) {
     bool isExist = false;
     for(auto& c : count)
     {
-      if(c.first-0.01 <= point && point <= c.first+0.01) // 5 cm of margin
+      if(c.first-0.005 <= point && point <= c.first+0.005) // 1 cm of margin
       {
         c.second += 1;
         isExist = true;
@@ -130,25 +132,14 @@ int main(int argc, char **argv) {
     }
   }
 
-  // calculate probability from count
-  int total = 0;
-  for(auto& c : count)
-  {
-    total += c.second;
-  }
-
-  for(auto& c : count)
-  {
-    prob.push_back(make_pair(c.first, (float)c.second / total));
-  }
-  count.clear();
-
-
   LloydQuantizer lloyd;
   lloyd.initialize(min, max, bit);
-  lloyd.train(points, prob, iteration);
+  lloyd.train(points, count, iteration);
 
   float avgMSE = 0, avgPSNR = 0;
+  float avgLinMSE = 0, avgLinPSNR = 0;
+
+
   // Testing...
   for (int i = 0; i < testing_data_num; i++)
   {
@@ -179,7 +170,21 @@ int main(int argc, char **argv) {
         testPoints.push_back(val);
       }
     }
+
+    // Uniform Quant...
+    cv::Mat intRi, denormRi;
+    double min2, max2;
+    riConverter.normalizeRi(ri, intRi, min2, max2);
+    riConverter.denormalizeRi(intRi, min2, max2, denormRi);
+
+    float linMSE  = Metrics::calculateMSE(ri, denormRi);
+    float linPSNR = 10 * log10(pow(80, 2) / linMSE);
+    avgLinMSE += linMSE;
+    avgLinPSNR += linPSNR;
+
     ri.release();
+    intRi.release();
+    denormRi.release();
     intMap.release();
 
     float mse, psnr;
@@ -192,8 +197,10 @@ int main(int argc, char **argv) {
 
   avgMSE /= testing_data_num;
   avgPSNR /= testing_data_num;
+  avgLinMSE /= testing_data_num;
+  avgLinPSNR /= testing_data_num;
   cout << "[TEST] avgMSE: " << avgMSE << ", avgPSNR: " << avgPSNR << endl;
-
+  cout << "[TEST] avgLinMSE: " << avgLinMSE << ", avgLinPSNR: " << avgLinPSNR << endl;
 
   return 0;
 }
