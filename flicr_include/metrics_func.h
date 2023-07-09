@@ -44,8 +44,7 @@ class Metrics
       }
     }
 
-    mse /= nonzero;
-
+    if(nonzero > 0) mse /= nonzero;
     return mse;
   }
 

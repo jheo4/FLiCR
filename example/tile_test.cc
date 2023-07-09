@@ -7,8 +7,6 @@ int main(int argc, char **argv) {
   cxxopts::Options options("compressor", "FLiCR Compressor (XYZI->XYZ)");
   options.add_options()
     ("i, input", "Raw input file path", cxxopts::value<std::string>())
-    ("o, output", "Output ri path", cxxopts::value<std::string>())
-    ("m, outintmap", "Output intensity map path", cxxopts::value<std::string>())
     ("yaw_fov",   "yaw fov", cxxopts::value<float>())
     ("pitch_fov", "pitch fov", cxxopts::value<float>())
     ("yaw_offset",   "yaw offset", cxxopts::value<float>())
@@ -18,7 +16,6 @@ int main(int argc, char **argv) {
 
     ("x, width", "range image width", cxxopts::value<int>())
     ("y, height", "range image height", cxxopts::value<int>())
-    ("n, normalize", "normalize ri/intmap", cxxopts::value<bool>())
 
     ("d, debug", "debug print option", cxxopts::value<bool>()->default_value("false"))
     ("h, help", "Print usage")
@@ -32,8 +29,6 @@ int main(int argc, char **argv) {
   }
 
   std::string input  = parsedArgs["input"].as<std::string>();
-  std::string output = parsedArgs["output"].as<std::string>();
-  std::string outputIntMap = parsedArgs["outintmap"].as<std::string>();
   float yaw_fov   = parsedArgs["yaw_fov"].as<float>();
   float pitch_fov = parsedArgs["pitch_fov"].as<float>();
   float yaw_offset   = parsedArgs["yaw_offset"].as<float>();
@@ -42,22 +37,18 @@ int main(int argc, char **argv) {
   float max   = parsedArgs["max_range"].as<float>();
   int x = parsedArgs["width"].as<int>();
   int y = parsedArgs["height"].as<int>();
-  bool norm = parsedArgs["normalize"].as<bool>();
   bool debug = parsedArgs["debug"].as<bool>();
 
   if(debug)
   {
     cout << "ARGS" << endl;
     cout << "\tinput file: " << input << endl;
-    cout << "\toutput file: " << output << endl;
-    cout << "\toutintmap file: " << outputIntMap << endl;
     cout << "\tsensor's yaw FoV: "   << yaw_fov << endl;
     cout << "\tsensor's pitch FoV: " << pitch_fov << endl;
     cout << "\tsensor's yaw offset: "   << yaw_offset << endl;
     cout << "\tsensor's pitch offset: " << pitch_offset << endl;
     cout << "\tsensor's min/max range: " << min << ", " << max << endl;
     cout << "\tRI, intMap resolution: " << x << ", " << y << endl;
-    cout << "\tNormalize: " << norm << endl;
   }
 
 
@@ -88,6 +79,17 @@ int main(int argc, char **argv) {
   Tiler tiler;
   // std::vector<cv::Mat> split(cv::Mat image, int x_tiles, int y_tiles);
   std::vector<cv::Mat> tiles = tiler.split(ri, 2, 2);
+
+  // change pixel value of ri
+  cout << "[BEFORE]" << endl;
+  cout << ri.at<float>(10, 10) << endl;
+  cout << tiles[0].at<float>(10, 10) << endl;
+
+  ri.at<float>(10, 10) = 444;
+
+  cout << "[AFTER]" << endl;
+  cout << ri.at<float>(10, 10) << endl;
+  cout << tiles[0].at<float>(10, 10) << endl;
 
   ri.release();
   intMap.release();
