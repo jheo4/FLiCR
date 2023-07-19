@@ -7,12 +7,16 @@
 #include <opencv2/opencv.hpp>
 #include <defs.h>
 #include <types.h>
+#include <tiler.h>
+
+using namespace std;
 
 namespace flicr
 {
 class RiConverter
 {
   public:
+    Tiler tiler;
     int riRow, riCol;
     // Pitch (y, row), Yaw (x, col)
     double pitchPrecision,    yawPrecision;
@@ -39,11 +43,16 @@ class RiConverter
     void XYZ2RTP(float &x, float &y, float &z, float &rho, int &pitchRow, int &yawCol);
     void RTP2XYZ(float &rho, int &pitchRow, int &yawCol, float &x, float &y, float &z);
 
-    void  convertRawPc2Ri     (types::RawPc     inPc, cv::Mat &outRi, bool parallel);
-    void  convertPc2Ri        (types::PclPcXyz  inPc, cv::Mat &outRi, bool parallel);
-    void  convertPc2RiWithI   (types::PclPcXyzi inPc, cv::Mat &outRi, bool parallel);
-    void  convertPc2RiWithIm  (types::PclPcXyzi inPc, cv::Mat &outRi, cv::Mat &outIntMap, bool parallel);
-    void  convertPc2RiWithXyz (types::PclPcXyz  inPc, cv::Mat &outRiWithXyz, bool parallel);
+    void convertRawPc2Ri     (types::RawPc     inPc, cv::Mat &outRi, bool parallel);
+    void convertPc2Ri        (types::PclPcXyz  inPc, cv::Mat &outRi, bool parallel);
+    void convertPc2RiWithI   (types::PclPcXyzi inPc, cv::Mat &outRi, bool parallel);
+    void convertPc2RiWithIm  (types::PclPcXyzi inPc, cv::Mat &outRi, cv::Mat &outIntMap, bool parallel);
+    void convertPc2RiWithXyz (types::PclPcXyz  inPc, cv::Mat &outRiWithXyz, bool parallel);
+
+    void PcToRiWithTile (types::PclPcXyz inPc, int xt, int yt, cv::Mat &outRi, vector<cv::Mat> &outTiles, vector<vector<int>> &outTileCount, bool parallel);
+    void PcToRiImWithTile(types::PclPcXyzi inPc, int xt, int yt,
+                          cv::Mat &outRi, cv::Mat &outIm, vector<cv::Mat> &outRiTiles, vector<cv::Mat> &outImTiles,
+                          vector<vector<int>> &outTileCount, bool parallel);
 
     types::PclPcXyz  reconstructPcFromRi       (cv::Mat &ri, bool parallel);
     types::PclPcXyzi reconstructPcFromRiWithI  (cv::Mat &ri, bool parallel);

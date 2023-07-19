@@ -1,4 +1,5 @@
 #include <ri_converter.h>
+#include <tiler.h>
 #include <defs.h>
 
 using namespace flicr;
@@ -99,6 +100,83 @@ void RiConverter::convertRawPc2Ri(types::RawPc inPc, cv::Mat &outRi, bool parall
 }
 
 
+void RiConverter::PcToRiWithTile(types::PclPcXyz inPc, int xt, int yt, cv::Mat &outRi, vector<cv::Mat> &outTiles, vector<vector<int>> &outTileCount, bool parallel)
+{
+  outRi = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
+
+  outTileCount.resize(yt);
+  for(int i = 0; i < yt; i++) outTileCount[i].resize(xt, 0);
+
+  #pragma omp parallel for if (parallel)
+  for(int i = 0; i < (int)inPc->points.size(); i++)
+  {
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
+
+    float rho;
+    int pitchRow, yawCol;
+
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
+
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
+
+
+    if(outRi.at<float>(rowIdx, colIdx) == 0)
+    {
+      outRi.at<float>(rowIdx, colIdx) = rho;
+      int tileX = (int)(colIdx / xt);
+      int tileY = (int)(rowIdx / yt);
+      outTileCount[tileY][tileX]++;
+    }
+  }
+
+  outTiles = this->tiler.split(outRi, riCol/xt, riRow/yt);
+}
+
+void RiConverter::PcToRiImWithTile(types::PclPcXyzi inPc, int xt, int yt,
+                                   cv::Mat &outRi, cv::Mat &outIm, vector<cv::Mat> &outRiTiles, vector<cv::Mat> &outImTiles,
+                                   vector<vector<int>> &outTileCount, bool parallel)
+{
+  outRi     = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
+  outIm = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
+
+  outTileCount.resize(yt);
+  for(int i = 0; i < yt; i++) outTileCount[i].resize(xt, 0);
+
+  int tileSizeX = riCol/xt;
+  int tileSizeY = riRow/yt;
+
+  #pragma omp parallel for if (parallel)
+  for(int i = 0; i< (int)inPc->points.size(); i++)
+  {
+    float x = inPc->points[i].x;
+    float y = inPc->points[i].y;
+    float z = inPc->points[i].z;
+
+    float rho;
+    int pitchRow, yawCol;
+
+    XYZ2RTP(x, y, z, rho, pitchRow, yawCol);
+
+    int rowIdx = std::min(outRi.rows-1, std::max(0, pitchRow));
+    int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
+
+    if(outRi.at<float>(rowIdx, colIdx) == 0)
+    {
+      outRi.at<float>(rowIdx, colIdx) = rho;
+      outIm.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
+      int tileX = (int)(colIdx / tileSizeX);
+      int tileY = (int)(rowIdx / tileSizeY);
+      outTileCount[tileY][tileX]++;
+    }
+  }
+
+  outRiTiles = this->tiler.split(outRi, xt, yt);
+  outImTiles = this->tiler.split(outIm, xt, yt);
+}
+
 void RiConverter::convertPc2Ri(types::PclPcXyz inPc, cv::Mat &outRi, bool parallel)
 {
   outRi = cv::Mat(riRow, riCol, CV_32FC1, cv::Scalar(0.f));
@@ -119,8 +197,6 @@ void RiConverter::convertPc2Ri(types::PclPcXyz inPc, cv::Mat &outRi, bool parall
     int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<float>(rowIdx, colIdx) == 0)
-      outRi.at<float>(rowIdx, colIdx) = rho;
-    else if(rho > outRi.at<float>(rowIdx, colIdx))
       outRi.at<float>(rowIdx, colIdx) = rho;
   }
 }
@@ -150,11 +226,6 @@ void RiConverter::convertPc2RiWithI(types::PclPcXyzi inPc, cv::Mat &outRi, bool 
       outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
       outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
     }
-    else if(rho > outRi.at<cv::Vec2f>(rowIdx, colIdx)[0])
-    {
-      outRi.at<cv::Vec2f>(rowIdx, colIdx)[0] = rho;
-      outRi.at<cv::Vec2f>(rowIdx, colIdx)[1] = inPc->points[i].intensity;
-    }
   }
 }
 
@@ -180,11 +251,6 @@ void RiConverter::convertPc2RiWithIm(types::PclPcXyzi inPc, cv::Mat &outRi, cv::
     int colIdx = std::min(outRi.cols-1, std::max(0, yawCol));
 
     if(outRi.at<float>(rowIdx, colIdx) == 0)
-    {
-      outRi.at<float>(rowIdx, colIdx) = rho;
-      outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;
-    }
-    else if(rho > outRi.at<float>(rowIdx, colIdx))
     {
       outRi.at<float>(rowIdx, colIdx) = rho;
       outIntMap.at<float>(rowIdx, colIdx) = inPc->points[i].intensity;

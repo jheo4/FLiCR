@@ -38,6 +38,21 @@ namespace types
 
     return pcXyz;
   }
+
+  class DownsampledTile
+  {
+    public:
+    float yawPrec, pitchPrec;
+    float yawOffset, pitchOffset;
+
+    void set(float _yawPrec, float _pitchPrec, float _yawOffset, float _pitchOffset)
+    {
+      yawPrec = _yawPrec;
+      pitchPrec = _pitchPrec;
+      yawOffset = _yawOffset;
+      pitchOffset = _pitchOffset;
+    }
+  };
 }
 }
 

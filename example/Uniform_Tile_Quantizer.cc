@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
   float pitch = pitch_fov / y;
   float yaw   = yaw_fov / x;
-  float avgMSE = 0, avgPSNR = 0;
+  float avgMSE = 0, avgPSNR = 0, avgRMSE = 0;
 
   RiConverter riConverter;
   riConverter.setConfig(0, 80, pitch, yaw, pitch_fov, yaw_fov, pitch_offset, yaw_offset);
@@ -92,22 +92,14 @@ int main(int argc, char **argv) {
     // PC -> RI
     cv::Mat ri, intMap, copiedRi;
     riConverter.convertPc2RiWithIm(xyzi, ri, intMap, true);
-
-    cv::Mat intRi;
-    riConverter.normalizeRi(ri, intRi);
-    cv::imshow("intRi", intRi);
-    cv::waitKey(0);
-
     copiedRi = ri.clone();
 
     // RI -> Tiled RIs
     Tiler tiler;
     vector<cv::Mat> tiles = tiler.split(ri, xt, yt);
 
-
     vector<cv::Mat> normTiles;
     vector<pair<float, float>> tileMinMax;
-    tileMinMax.resize(tiles.size());
 
     // iterate tile and normalize the RI tiles
     for (int i = 0; i < tiles.size(); i++)
@@ -120,36 +112,33 @@ int main(int argc, char **argv) {
       tileMinMax.push_back({min, max});
     }
 
-    float MSE = 0, PSNR = 0;
     // iterate the normalized tiles and denormalize...
-    vector<cv::Mat> denormTiles;
+    cv::Mat denormRi = cv::Mat::zeros(ri.rows, ri.cols, CV_32FC1);
+    vector<cv::Mat> denormTiles = tiler.split(denormRi, xt, yt);
+
     for (int i = 0; i < normTiles.size(); i++)
     {
-      cv::Mat normTile = normTiles[i];
       double min = tileMinMax[i].first;
       double max = tileMinMax[i].second;
-      cv::Mat denormTile;
-      riConverter.denormalizeRi(normTile, min, max, denormTile);
-      denormTiles.push_back(denormTile);
+      riConverter.denormalizeRi(normTiles[i], min, max, denormTiles[i]);
 
       float tileMSE, tilePSNR;
       tileMSE  = Metrics::calculateMSE(tiles[i], denormTiles[i]);
       tilePSNR = 10 * log10(pow(80, 2) / tileMSE);
 
-      MSE  += tileMSE;
-      PSNR += tilePSNR;
-
       cout << i << "th tileMSE: " << tileMSE << ", tilePSNR: " << tilePSNR << endl;
-
     }
 
-    MSE  /= normTiles.size();
-    PSNR /= normTiles.size();
+    float MSE, PSNR;
+    MSE = Metrics::calculateMSE(ri, denormRi);
+    PSNR = 10 * log10(pow(80, 2) / MSE);
 
     avgMSE  += MSE;
+    avgRMSE += sqrt(MSE);
     avgPSNR += PSNR;
 
     ri.release();
+    denormRi.release();
     copiedRi.release();
     intMap.release();
 
@@ -157,7 +146,7 @@ int main(int argc, char **argv) {
 
   avgMSE /= testing_data_num;
   avgPSNR /= testing_data_num;
-  cout << "[TEST] avgMSE: " << avgMSE << ", avgPSNR: " << avgPSNR << endl;
+  cout << "[TEST] avgMSE: " << avgMSE << ", avgRMSE: " << avgRMSE << ", avgPSNR: " << avgPSNR << endl;
 
   return 0;
 }
