@@ -12,7 +12,7 @@ namespace flicr
 class RiDownSampler
 {
 public:
-  void downsample(vector<cv::Mat> inTiles, vector<int> inTileCount, int xt, int yt,
-                  vector<cv::Mat> outDownsampledTiles, vector<types::DownsampledTile> outTileInfo);
+  void downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTileCount, int xt, int yt,
+                  vector<cv::Mat> &outDownsampledTiles, vector<types::DownsampledTile> &outTileInfo);
 };
 }

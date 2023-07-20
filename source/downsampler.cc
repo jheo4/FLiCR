@@ -3,8 +3,8 @@
 using namespace flicr;
 using namespace std;
 
-void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<int> inTileCount, int xt, int yt,
-                               vector<cv::Mat> outDownsampledTiles, vector<types::DownsampledTile> outTileInfo)
+void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTileCount, int xt, int yt,
+                               vector<cv::Mat> &outDownsampledTiles, vector<types::DownsampledTile> &outTileInfo)
 {
   int tileTotal = inTiles[0].rows * inTiles[0].cols;
 
@@ -14,17 +14,18 @@ void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<int> inTileCount,
   int rowDegIndex = 0;
   int colDegIndex = 0;
 
-
-  for(int i = 0; i < inTiles.size(); i++)
+  for (int i = 0; i < inTiles.size(); i++)
   {
-    float density = (float)inTileCount[i] / tileTotal;
+    int yCount = i / xt;
+    int xCount = i % xt;
+
+    float density = (float)inTileCount[yCount][xCount] / tileTotal;
 
     float degOffsetX = tileDegX * colDegIndex;
     float degOffsetY = tileDegY * rowDegIndex;
 
     colDegIndex = i % xt;
     rowDegIndex = i / xt;
-
 
     int x = inTiles[i].cols * density;
     float yawPrec = tileDegX / x;
