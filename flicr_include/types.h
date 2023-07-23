@@ -31,7 +31,7 @@ namespace types
       PclXyz p;
       p.x = pcXyzi->points[i].x;
       p.y = pcXyzi->points[i].y;
-      p.z = pcXyzi->points[i].y;
+      p.z = pcXyzi->points[i].z;
 
       pcXyz->push_back(p);
     }
@@ -51,6 +51,15 @@ namespace types
       pitchPrec = _pitchPrec;
       yawOffset = _yawOffset;
       pitchOffset = _pitchOffset;
+    }
+
+    void print(int idx = 0)
+    {
+      std::cout << "DownsampledTile: " << idx << std::endl;
+      std::cout << "\t yawPrec: " << yawPrec << std::endl;
+      std::cout << "\t pitchPrec: " << pitchPrec << std::endl;
+      std::cout << "\t yawOffset: " << yawOffset << std::endl;
+      std::cout << "\t pitchOffset: " << pitchOffset << std::endl;
     }
   };
 }

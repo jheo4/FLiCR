@@ -43,8 +43,8 @@ void RiConverter::setConfig(double minRange,          double maxRange,
 
 void RiConverter::setResolution(int row, int col)
 {
-  this->pitchPrecision = (double)this->pitchDegree/row;
-  this->yawPrecision    = (double)this->yawDegree/col;
+  this->pitchPrecision = (double)this->pitchDegree / row;
+  this->yawPrecision = (double)this->yawDegree / col;
   this->riRow = row;
   this->riCol = col;
 }
@@ -53,15 +53,15 @@ void RiConverter::setResolution(int row, int col)
 void RiConverter::XYZ2RTP(float &x, float &y, float &z, float &rho, int &pitchRow, int &yawCol)
 {
   rho    = std::sqrt(x*x + y*y + z*z);
-  pitchRow = (int)((RAD2DEGREE(std::acos(z/rho))+pitchDegreeOffset) / pitchPrecision);
-  yawCol    = (int)((RAD2DEGREE(std::atan2(y, x))+yawDegreeOffset)    / yawPrecision);
+  pitchRow = (int)((RAD2DEGREE(std::acos(z / rho)) + pitchDegreeOffset) / pitchPrecision);
+  yawCol = (int)((RAD2DEGREE(std::atan2(y, x)) + yawDegreeOffset) / yawPrecision);
 }
 
 
 void RiConverter::RTP2XYZ(float &rho, int &pitchRow, int &yawCol, float &x, float &y, float &z)
 {
   float dPitch = (pitchRow * pitchPrecision) - pitchDegreeOffset;
-  float dYaw    = (yawCol    * yawPrecision)    - yawDegreeOffset;
+  float dYaw = (yawCol * yawPrecision) - yawDegreeOffset;
 
   float rPitch = DEGREE2RAD(dPitch);
   float rYaw   = DEGREE2RAD(dYaw);
@@ -139,7 +139,7 @@ void RiConverter::PcToRiImWithTile(types::PclPcXyzi inPc, int xt, int yt,
                                    cv::Mat &outRi, cv::Mat &outIm, vector<cv::Mat> &outRiTiles, vector<cv::Mat> &outImTiles,
                                    vector<vector<int>> &outTileCount, bool parallel)
 {
-  outRi     = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
+  outRi = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
   outIm = cv::Mat(this->riRow, this->riCol, CV_32FC1, cv::Scalar(0.f));
 
   outTileCount.resize(yt);

@@ -61,7 +61,8 @@ int main(int argc, char **argv) {
   RiConverter riConverter;
   riConverter.setConfig(min, max, pitch, yaw, pitch_fov, yaw_fov, pitch_offset, yaw_offset);
 
-  // Testing...
+
+  // 1. read PC
   xyzi = pcReader.readXyziBin(input);
   if (xyzi == NULL)
   {
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // PC -> tiled RI
+  // 2. convert PC to RI
   cv::Mat ri, intMap, copiedRi;
   vector<cv::Mat> riTiles;
   vector<cv::Mat> intMapTiles;
@@ -78,66 +79,98 @@ int main(int argc, char **argv) {
   riConverter.PcToRiImWithTile(xyzi, xt, yt, ri, intMap, riTiles, intMapTiles, tileCount, true);
 
   for(int y = 0; y < tileCount.size(); y++)
+  {
     for(int x = 0; x < tileCount[0].size(); x++)
     {
       cout << "tile " << y << ", " << x << " count: " << tileCount[y][x] << endl;
     }
-
-  // copiedRi = ri.clone();
-
-  vector<cv::Mat> normTiles;
-  vector<pair<float, float>> tileMinMax;
-
-  // iterate tile and normalize the RI tiles
-  for (int i = 0; i < riTiles.size(); i++)
-  {
-    cv::Mat tile = riTiles[i];
-    cv::Mat normTile;
-    double min, max;
-    riConverter.normalizeRi(tile, normTile, min, max);
-    cout << i << "th  min: " << min << ", max: " << max << endl;
-    normTiles.push_back(normTile);
-    tileMinMax.push_back({min, max});
   }
 
-  /*
-  // create cvMat with same size of ri
-  cv::Mat denormRi = cv::Mat::zeros(ri.rows, ri.cols, CV_32FC1);
-  vector<cv::Mat> denormTiles = tiler.split(denormRi, xt, yt);
+  // 3. downsample RI tiles
+  RiDownSampler riDownSampler;
+  vector<vector<cv::Mat>> downsampledTiles;
+  vector<vector<cv::Mat>> downsampledIntMapTiles;
+  vector<vector<types::DownsampledTile>> downsampledTileInfo;
+  riDownSampler.downsample(riTiles, intMapTiles, tileCount, xt, yt, downsampledTiles, downsampledIntMapTiles, downsampledTileInfo);
 
-  float MSE = 0, PSNR = 0;
-  // iterate the normalized tiles and denormalize...
-  for (int i = 0; i < normTiles.size(); i++)
+  for(int i = 0; i < downsampledTileInfo.size(); i++)
   {
-    double min = tileMinMax[i].first;
-    double max = tileMinMax[i].second;
-    cout << i << "th  min: " << min << ", max: " << max << endl;
-    riConverter.denormalizeRi(normTiles[i], min, max, denormTiles[i]);
-
-    float tileMSE, tilePSNR;
-    tileMSE  = Metrics::calculateMSE(tiles[i], denormTiles[i]);
-    tilePSNR = 10 * log10(pow(80, 2) / tileMSE);
-
-    MSE  += tileMSE;
-    PSNR += tilePSNR;
-
-    cout << i << "th tileMSE: " << tileMSE << ", tilePSNR: " << tilePSNR << endl;
+    for(int j = 0; j < downsampledTileInfo[i].size(); j++)
+    {
+      downsampledTileInfo[i][j].print(i*yt+j);
+    }
 
   }
 
-  MSE  /= normTiles.size();
-  PSNR /= normTiles.size();
 
-  float totalMSE = Metrics::calculateMSE(ri, denormRi);
-  float totalPSNR = 10 * log10(pow(80, 2) / totalMSE);
+  // 4. quantize downsampled RI tiles
+  vector<vector<pair<float, float>>> tileMinMax, intMapMinMax;
+  tileMinMax.resize(downsampledTiles.size());
+  intMapMinMax.resize(downsampledTiles.size());
+  for(int x = 0; x < downsampledTiles.size(); x++)
+  {
+    tileMinMax[x].resize(downsampledTiles[x].size());
+    intMapMinMax[x].resize(downsampledTiles[x].size());
+  }
 
-  ri.release();
-  copiedRi.release();
-  intMap.release();
+  for(int y = 0; y < downsampledTiles.size(); y++)
+  {
+    for(int x = 0; x < downsampledTiles[y].size(); x++)
+    {
+      cv::Mat tile = downsampledTiles[y][x];
+      cv::Mat intTile = downsampledIntMapTiles[y][x];
+      double min, max, intMin, intMax;
+      riConverter.normalizeRi(tile, tile, min, max);
+      riConverter.normalizeRi(intTile, intTile, intMin, intMax);
 
-  cout << "[TEST] avgMSE: " << MSE << ", avgPSNR: " << PSNR << endl;
-  cout << "[TEST] totalMSE: " << totalMSE << ", totalPSNR: " << totalPSNR << endl;
-  */
+      tileMinMax[y][x] = make_pair(min, max);
+      intMapMinMax[y][x] = make_pair(intMin, intMax);
+    }
+  }
+
+  // 5. denormalize downsampled RI tiles
+  vector<vector<cv::Mat>> denormTiles;
+  vector<vector<cv::Mat>> denormIntMapTiles;
+  denormTiles.resize(downsampledTiles.size());
+  denormIntMapTiles.resize(downsampledTiles.size());
+  for(int x = 0; x < downsampledTiles.size(); x++)
+  {
+    denormTiles[x].resize(downsampledTiles[x].size());
+    denormIntMapTiles[x].resize(downsampledTiles[x].size());
+  }
+
+  for(int y = 0; y < downsampledTiles.size(); y++)
+  {
+    for(int x = 0; x < downsampledTiles[y].size(); x++)
+    {
+      cv::Mat tile = downsampledTiles[y][x];
+      cv::Mat intTile = downsampledIntMapTiles[y][x];
+      double min = tileMinMax[y][x].first;
+      double max = tileMinMax[y][x].second;
+      double intMin = intMapMinMax[y][x].first;
+      double intMax = intMapMinMax[y][x].second;
+      cout << "tile " << y << ", " << x << " min: " << min << ", max: " << max << endl;
+      cout << "intMap tile " << y << ", " << x << " min: " << intMin << ", max: " << intMax << endl;
+      riConverter.denormalizeRi(tile, min, max, denormTiles[y][x]);
+      riConverter.denormalizeRi(intTile, intMin, intMax, denormIntMapTiles[y][x]);
+    }
+  }
+
+  // 6. reconstruct PC from denormalized RI tiles
+  // types::PclPcXyzi pc = riDownSampler.RecPcFromTiledDwonsampledRi(downsampledTiles, downsampledIntMapTiles, downsampledTileInfo);
+  types::PclPcXyzi pc = riDownSampler.RecPcFromTiledDwonsampledRiParallel(downsampledTiles, downsampledIntMapTiles, downsampledTileInfo);
+  types::PclPcXyz xyz = types::xyzi2xyz(pc);
+  types::PclPcXyz origXyz = types::xyzi2xyz(xyzi);
+
+  Visualizer visualizer1;
+  visualizer1.initViewerXyz();
+  visualizer1.setViewer(origXyz);
+  visualizer1.show(5000);
+
+  Visualizer visualizer2;
+  visualizer2.initViewerXyz();
+  visualizer2.setViewer(xyz);
+  visualizer2.show(5000);
 
   return 0;
 }
