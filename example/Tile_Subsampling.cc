@@ -9,6 +9,7 @@ int main(int argc, char **argv) {
   options.add_options()
     ("i, input", "Raw input file path", cxxopts::value<std::string>())
 
+    ("nf", "downsize norm factor", cxxopts::value<float>())
     ("xt", "x-wise tiles", cxxopts::value<int>())
     ("yt", "y-wise tiles", cxxopts::value<int>())
 
@@ -34,6 +35,7 @@ int main(int argc, char **argv) {
   float min   = 0;
   float max   = 80;
 
+  float nf = parsedArgs["nf"].as<float>();
   int xt = parsedArgs["xt"].as<int>();
   int yt = parsedArgs["yt"].as<int>();
   bool debug = parsedArgs["debug"].as<bool>();
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
   {
     for(int x = 0; x < tileCount[0].size(); x++)
     {
-      cout << "tile " << y << ", " << x << " count: " << tileCount[y][x] << endl;
+      cout << "tile " << y << x << "'s count: " << tileCount[y][x] << " / Tile Occupancy: " <<  tileCount[y][x]/(float)(riTiles[y].rows*riTiles[y].cols) << endl;
     }
   }
 
@@ -91,7 +93,7 @@ int main(int argc, char **argv) {
   vector<vector<cv::Mat>> downsampledTiles;
   vector<vector<cv::Mat>> downsampledIntMapTiles;
   vector<vector<types::DownsampledTile>> downsampledTileInfo;
-  riDownSampler.downsample(riTiles, intMapTiles, tileCount, xt, yt, downsampledTiles, downsampledIntMapTiles, downsampledTileInfo);
+  riDownSampler.downsample(riTiles, intMapTiles, tileCount, nf, xt, yt, downsampledTiles, downsampledIntMapTiles, downsampledTileInfo);
 
   for(int i = 0; i < downsampledTileInfo.size(); i++)
   {

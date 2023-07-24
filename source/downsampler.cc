@@ -4,7 +4,7 @@
 using namespace flicr;
 using namespace std;
 
-void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTileCount, int xt, int yt,
+void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTileCount, float normFactor, int xt, int yt,
                                vector<vector<cv::Mat>> &outDownsampledTiles, vector<vector<types::DownsampledTile>> &outTileInfo)
 {
   int tileTotal = inTiles[0].rows * inTiles[0].cols;
@@ -25,7 +25,7 @@ void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTi
     int yCount = i / xt;
     int xCount = i % xt;
 
-    float density = (float)inTileCount[yCount][xCount] / tileTotal;
+    float density = (float)inTileCount[yCount][xCount] / tileTotal / normFactor;
 
     float degOffsetX = tileDegX * xCount;
     float degOffsetY = tileDegY * yCount;
@@ -47,7 +47,7 @@ void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<vector<int>> inTi
   }
 }
 
-void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<cv::Mat> intMapTiles, vector<vector<int>> inTileCount, int xt, int yt,
+void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<cv::Mat> intMapTiles, vector<vector<int>> inTileCount, float normFactor, int xt, int yt,
                                vector<vector<cv::Mat>> &outDownsampledTiles,
                                vector<vector<cv::Mat>> &outDownsampledIntMapTile,
                                vector<vector<types::DownsampledTile>> &outTileInfo)
@@ -72,7 +72,7 @@ void RiDownSampler::downsample(vector<cv::Mat> inTiles, vector<cv::Mat> intMapTi
     int yCount = i / xt;
     int xCount = i % xt;
 
-    float density = (float)inTileCount[yCount][xCount] / tileTotal;
+    float density = (float)inTileCount[yCount][xCount] / tileTotal / normFactor;
 
     float degOffsetX = tileDegX * xCount;
     float degOffsetY = tileDegY * yCount;
